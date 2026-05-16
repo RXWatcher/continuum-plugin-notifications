@@ -4,6 +4,11 @@ Native Go notification hub for Continuum. It receives host/plugin events,
 matches them against admin-defined rules, queues deliveries, retries failures,
 and sends notifications through built-in Go providers.
 
+Notifications is a passive shared service. Other plugins publish their normal
+events whether or not `continuum.notifications` is installed, enabled, or
+configured; if this plugin is absent there is simply no notification subscriber
+to consume those events.
+
 This plugin does not shell out to Apprise and does not depend on Apprise URL
 syntax. Apprise is only the feature benchmark: broad provider coverage, one
 admin surface, test sends, retries, and delivery audit.
