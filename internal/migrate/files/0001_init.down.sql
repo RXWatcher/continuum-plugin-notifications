@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS deliveries;
+DROP TABLE IF EXISTS rules;
+DROP TABLE IF EXISTS targets;
+DROP TABLE IF EXISTS app_config;

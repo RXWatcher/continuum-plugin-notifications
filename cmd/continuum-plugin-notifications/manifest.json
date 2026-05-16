@@ -1,0 +1,114 @@
+{
+  "plugin_id": "continuum.notifications",
+  "version": "0.1.0",
+  "checksum": "__CHECKSUM__",
+  "continuum_api_version": "v1",
+  "supported_platforms": [
+    {
+      "os": "linux",
+      "arch": "amd64"
+    }
+  ],
+  "capabilities": [
+    {
+      "type": "event_consumer.v1",
+      "id": "notification-events",
+      "display_name": "Notification events",
+      "description": "Receives Continuum and plugin events, applies rules, and queues outbound notifications.",
+      "subscriptions": [
+        "continuum.notifications.send",
+        "notifications.send",
+        "library.media_added",
+        "plugin.continuum.requests.submitted",
+        "plugin.continuum.requests.approved",
+        "plugin.continuum.requests.denied",
+        "plugin.continuum.requests.cancelled",
+        "plugin.continuum.requests.fulfilled",
+        "plugin.continuum.arrproxy.submitted",
+        "plugin.continuum.arrproxy.downloading",
+        "plugin.continuum.arrproxy.imported",
+        "plugin.continuum.arrproxy.failed",
+        "plugin.continuum.arr-router.submitted",
+        "plugin.continuum.arr-router.downloading",
+        "plugin.continuum.arr-router.imported",
+        "plugin.continuum.arr-router.failed",
+        "plugin.continuum.audiobooks.request_submitted",
+        "plugin.continuum.ebooks.request_submitted",
+        "plugin.continuum.bookwarehouse-audio.request_acknowledged",
+        "plugin.continuum.bookwarehouse-audio.request_status_changed",
+        "plugin.continuum.bookwarehouse-audio.request_fulfilled",
+        "plugin.continuum.bookwarehouse-audio.request_failed",
+        "plugin.continuum.bookwarehouse-ebook.request_acknowledged",
+        "plugin.continuum.bookwarehouse-ebook.request_status_changed",
+        "plugin.continuum.bookwarehouse-ebook.request_fulfilled",
+        "plugin.continuum.bookwarehouse-ebook.request_failed",
+        "plugin.continuum.ebookdb.request_acknowledged",
+        "plugin.continuum.ebookdb.request_status_changed",
+        "plugin.continuum.ebookdb.request_fulfilled",
+        "plugin.continuum.ebookdb.request_failed",
+        "plugin.*"
+      ]
+    },
+    {
+      "type": "scheduled_task.v1",
+      "id": "retry-notifications",
+      "display_name": "Retry notifications",
+      "description": "Retries queued or failed notification deliveries."
+    },
+    {
+      "type": "http_routes.v1",
+      "id": "admin",
+      "display_name": "Notifications admin",
+      "description": "Admin UI for targets, rules, provider settings, delivery audit, retries, and test sends."
+    }
+  ],
+  "http_routes": [
+    {
+      "id": "api",
+      "method": "*",
+      "path": "/api/admin/*",
+      "access": "admin"
+    },
+    {
+      "id": "service_api",
+      "method": "*",
+      "path": "/api/v1/*",
+      "access": "authenticated"
+    },
+    {
+      "id": "assets",
+      "method": "GET",
+      "path": "/assets/*",
+      "access": "public"
+    },
+    {
+      "id": "spa",
+      "method": "GET",
+      "path": "/admin/*",
+      "access": "admin",
+      "navigable": true,
+      "navigation_label": "Notifications",
+      "navigation_kind": "admin"
+    }
+  ],
+  "global_config_schema": [
+    {
+      "key": "connection",
+      "title": "Notifications connection",
+      "description": "Postgres DSN for the dedicated notifications schema.",
+      "json_schema": "{\"type\":\"object\",\"properties\":{\"database_url\":{\"type\":\"string\"}},\"required\":[\"database_url\"]}",
+      "required": true,
+      "admin_form": {
+        "submit_label": "Save",
+        "fields": [
+          {
+            "key": "database_url",
+            "label": "Postgres connection URL",
+            "control": "ADMIN_FORM_CONTROL_TEXT",
+            "required": true
+          }
+        ]
+      }
+    }
+  ]
+}

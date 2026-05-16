@@ -1,0 +1,385 @@
+package notify
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"net/url"
+	"strings"
+	"time"
+
+	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
+)
+
+type funcProvider struct {
+	id     string
+	name   string
+	fields []Field
+	send   func(context.Context, store.Target, Message) error
+}
+
+func (p funcProvider) ID() string          { return p.id }
+func (p funcProvider) DisplayName() string { return p.name }
+func (p funcProvider) Fields() []Field     { return normalizeFields(p.fields) }
+func (p funcProvider) Capabilities() Capabilities {
+	return providerCapabilities(p.id)
+}
+func (p funcProvider) Send(ctx context.Context, t store.Target, m Message) error {
+	return p.send(ctx, t, m)
+}
+
+func httpAPIProviders() []Provider {
+	return []Provider{
+		jsonTextProvider("google_chat", "Google Chat", "webhook_url", "text"),
+		jsonTextProvider("mattermost", "Mattermost webhook", "webhook_url", "text"),
+		jsonTextProvider("rocketchat", "Rocket.Chat webhook", "webhook_url", "text"),
+		jsonTextProvider("msteams", "Microsoft Teams webhook", "webhook_url", "text"),
+		jsonTextProvider("workflows", "Microsoft Workflows webhook", "webhook_url", "text"),
+		jsonTextProvider("webexteams", "Webex Teams webhook", "webhook_url", "markdown"),
+		jsonTextProvider("zoom", "Zoom webhook", "webhook_url", "message"),
+		jsonTextProvider("guilded", "Guilded webhook", "webhook_url", "content"),
+		jsonTextProvider("revolt", "Revolt webhook", "webhook_url", "content"),
+		jsonTextProvider("custom_json", "Custom JSON webhook", "url", "message"),
+		formTextProvider("custom_form", "Custom form webhook"),
+		xmlProvider(),
+		dingtalkProvider(),
+		wecomProvider(),
+		feishuProvider("feishu", "Feishu"),
+		feishuProvider("lark", "Lark"),
+		iftttProvider(),
+		telegramAliasProvider(),
+		notifiarrProvider(),
+		homeAssistantProvider(),
+		jellyfinProvider("jellyfin", "Jellyfin"),
+		jellyfinProvider("emby", "Emby"),
+		mailgunProvider(),
+		sendgridProvider(),
+		resendProvider(),
+		postmarkProvider(),
+		brevoProvider(),
+		sparkpostProvider(),
+		sesProvider(),
+		twilioProvider(),
+		vonageProvider(),
+		plivoProvider(),
+		clicksendProvider(),
+		messageBirdProvider(),
+		pushbulletProvider(),
+		oneSignalProvider(),
+		opsgenieProvider(),
+		pagerDutyProvider(),
+	}
+}
+
+func commonWebhookFields(key string) []Field {
+	return []Field{{Key: key, Label: "Webhook URL", Secret: true, Required: true}}
+}
+
+func jsonTextProvider(id, name, urlKey, bodyKey string) Provider {
+	return funcProvider{id: id, name: name, fields: commonWebhookFields(urlKey), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, val(t, urlKey), nil, map[string]any{bodyKey: m.Title + "\n\n" + m.Body, "title": m.Title})
+	}}
+}
+
+func formTextProvider(id, name string) Provider {
+	return funcProvider{id: id, name: name, fields: []Field{{Key: "url", Label: "URL", Required: true}, {Key: "authorization", Label: "Authorization", Secret: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		v := url.Values{"title": {m.Title}, "body": {m.Body}, "message": {m.Title + "\n\n" + m.Body}}
+		return postForm(ctx, val(t, "url"), map[string]string{"Authorization": val(t, "authorization")}, v)
+	}}
+}
+
+func xmlProvider() Provider {
+	return funcProvider{id: "custom_xml", name: "Custom XML webhook", fields: commonWebhookFields("url"), send: func(ctx context.Context, t store.Target, m Message) error {
+		body := `<notification><title>` + xmlEscape(m.Title) + `</title><body>` + xmlEscape(m.Body) + `</body></notification>`
+		return postRaw(ctx, val(t, "url"), "application/xml", nil, body)
+	}}
+}
+
+func dingtalkProvider() Provider {
+	return funcProvider{id: "dingtalk", name: "DingTalk", fields: []Field{{Key: "webhook_url", Label: "Webhook URL", Secret: true, Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, val(t, "webhook_url"), nil, map[string]any{"msgtype": "text", "text": map[string]any{"content": m.Title + "\n\n" + m.Body}})
+	}}
+}
+
+func wecomProvider() Provider {
+	return funcProvider{id: "wecombot", name: "WeCom Bot", fields: commonWebhookFields("webhook_url"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, val(t, "webhook_url"), nil, map[string]any{"msgtype": "text", "text": map[string]any{"content": m.Title + "\n\n" + m.Body}})
+	}}
+}
+
+func feishuProvider(id, name string) Provider {
+	return funcProvider{id: id, name: name, fields: commonWebhookFields("webhook_url"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, val(t, "webhook_url"), nil, map[string]any{"msg_type": "text", "content": map[string]any{"text": m.Title + "\n\n" + m.Body}})
+	}}
+}
+
+func iftttProvider() Provider {
+	return funcProvider{id: "ifttt", name: "IFTTT", fields: []Field{{Key: "webhook_key", Label: "Webhook key", Secret: true, Required: true}, {Key: "event", Label: "Event", Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		u := "https://maker.ifttt.com/trigger/" + val(t, "event") + "/with/key/" + val(t, "webhook_key")
+		return postJSON(ctx, u, nil, map[string]any{"value1": m.Title, "value2": m.Body, "value3": m.EventName})
+	}}
+}
+
+func telegramAliasProvider() Provider {
+	return funcProvider{id: "apprise_api", name: "Apprise API compatible webhook", fields: commonWebhookFields("url"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, val(t, "url"), nil, m)
+	}}
+}
+
+func notifiarrProvider() Provider {
+	return funcProvider{id: "notifiarr", name: "Notifiarr", fields: []Field{{Key: "api_key", Label: "API key", Secret: true, Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, "https://notifiarr.com/api/v1/notification/passthrough/"+val(t, "api_key"), nil, map[string]any{"notification": map[string]any{"title": m.Title, "text": m.Body}})
+	}}
+}
+
+func homeAssistantProvider() Provider {
+	return funcProvider{id: "home_assistant", name: "Home Assistant", fields: []Field{{Key: "server", Label: "Server", Required: true}, {Key: "token", Label: "Long-lived token", Secret: true, Required: true}, {Key: "service", Label: "Service", Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		u := strings.TrimRight(val(t, "server"), "/") + "/api/services/" + strings.TrimLeft(val(t, "service"), "/")
+		return postJSON(ctx, u, map[string]string{"Authorization": "Bearer " + val(t, "token")}, map[string]any{"title": m.Title, "message": m.Body})
+	}}
+}
+
+func jellyfinProvider(id, name string) Provider {
+	return funcProvider{id: id, name: name, fields: []Field{{Key: "server", Label: "Server", Required: true}, {Key: "api_key", Label: "API key", Secret: true, Required: true}, {Key: "user_id", Label: "User ID", Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		u := strings.TrimRight(val(t, "server"), "/") + "/Notifications/Admin"
+		return postJSON(ctx, u, map[string]string{"X-Emby-Token": val(t, "api_key")}, map[string]any{"UserId": val(t, "user_id"), "Name": m.Title, "Description": m.Body})
+	}}
+}
+
+func mailgunProvider() Provider {
+	return funcProvider{id: "mailgun", name: "Mailgun", fields: emailAPIFields("Domain", "API key"), send: func(ctx context.Context, t store.Target, m Message) error {
+		u := "https://api.mailgun.net/v3/" + val(t, "domain") + "/messages"
+		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte("api:"+val(t, "api_key")))
+		return postForm(ctx, u, map[string]string{"Authorization": auth}, url.Values{"from": {val(t, "from")}, "to": {val(t, "to")}, "subject": {m.Title}, "text": {m.Body}})
+	}}
+}
+
+func sendgridProvider() Provider {
+	return funcProvider{id: "sendgrid", name: "SendGrid", fields: emailAPIFields("", "API key"), send: func(ctx context.Context, t store.Target, m Message) error {
+		body := map[string]any{"personalizations": []any{map[string]any{"to": emailList(val(t, "to"))}}, "from": map[string]any{"email": val(t, "from")}, "subject": m.Title, "content": []any{map[string]any{"type": "text/plain", "value": m.Body}}}
+		return postJSON(ctx, "https://api.sendgrid.com/v3/mail/send", map[string]string{"Authorization": "Bearer " + val(t, "api_key")}, body)
+	}}
+}
+
+func resendProvider() Provider {
+	return funcProvider{id: "resend", name: "Resend", fields: emailAPIFields("", "API key"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, "https://api.resend.com/emails", map[string]string{"Authorization": "Bearer " + val(t, "api_key")}, map[string]any{"from": val(t, "from"), "to": strings.Split(val(t, "to"), ","), "subject": m.Title, "text": m.Body})
+	}}
+}
+
+func postmarkProvider() Provider {
+	return funcProvider{id: "postmark", name: "Postmark", fields: emailAPIFields("", "Server token"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, "https://api.postmarkapp.com/email", map[string]string{"X-Postmark-Server-Token": val(t, "api_key")}, map[string]any{"From": val(t, "from"), "To": val(t, "to"), "Subject": m.Title, "TextBody": m.Body})
+	}}
+}
+
+func brevoProvider() Provider {
+	return funcProvider{id: "brevo", name: "Brevo", fields: emailAPIFields("", "API key"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, "https://api.brevo.com/v3/smtp/email", map[string]string{"api-key": val(t, "api_key")}, map[string]any{"sender": map[string]any{"email": val(t, "from")}, "to": emailList(val(t, "to")), "subject": m.Title, "textContent": m.Body})
+	}}
+}
+
+func sparkpostProvider() Provider {
+	return funcProvider{id: "sparkpost", name: "SparkPost", fields: emailAPIFields("", "API key"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, "https://api.sparkpost.com/api/v1/transmissions", map[string]string{"Authorization": val(t, "api_key")}, map[string]any{"recipients": emailList(val(t, "to")), "content": map[string]any{"from": val(t, "from"), "subject": m.Title, "text": m.Body}})
+	}}
+}
+
+func sesProvider() Provider {
+	return funcProvider{id: "ses", name: "AWS SES HTTPS", fields: []Field{{Key: "endpoint", Label: "Signed SES endpoint", Required: true}, {Key: "authorization", Label: "Authorization", Secret: true}, {Key: "from", Label: "From address", Required: true}, {Key: "to", Label: "Recipients", Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, val(t, "endpoint"), map[string]string{"Authorization": val(t, "authorization")}, map[string]any{"from": val(t, "from"), "to": val(t, "to"), "subject": m.Title, "text": m.Body})
+	}}
+}
+
+func twilioProvider() Provider {
+	return funcProvider{id: "twilio", name: "Twilio SMS", fields: smsFields("Account SID", "Auth token"), send: func(ctx context.Context, t store.Target, m Message) error {
+		u := "https://api.twilio.com/2010-04-01/Accounts/" + val(t, "account") + "/Messages.json"
+		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(val(t, "account")+":"+val(t, "token")))
+		return postForm(ctx, u, map[string]string{"Authorization": auth}, url.Values{"From": {val(t, "from")}, "To": {val(t, "to")}, "Body": {m.Title + "\n" + m.Body}})
+	}}
+}
+
+func vonageProvider() Provider {
+	return funcProvider{id: "vonage", name: "Vonage SMS", fields: smsFields("API key", "API secret"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, "https://rest.nexmo.com/sms/json", nil, map[string]any{"api_key": val(t, "account"), "api_secret": val(t, "token"), "from": val(t, "from"), "to": val(t, "to"), "text": m.Title + "\n" + m.Body})
+	}}
+}
+
+func plivoProvider() Provider {
+	return funcProvider{id: "plivo", name: "Plivo SMS", fields: smsFields("Auth ID", "Auth token"), send: func(ctx context.Context, t store.Target, m Message) error {
+		u := "https://api.plivo.com/v1/Account/" + val(t, "account") + "/Message/"
+		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(val(t, "account")+":"+val(t, "token")))
+		return postJSON(ctx, u, map[string]string{"Authorization": auth}, map[string]any{"src": val(t, "from"), "dst": val(t, "to"), "text": m.Title + "\n" + m.Body})
+	}}
+}
+
+func clicksendProvider() Provider {
+	return funcProvider{id: "clicksend", name: "ClickSend SMS", fields: smsFields("Username", "API key"), send: func(ctx context.Context, t store.Target, m Message) error {
+		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(val(t, "account")+":"+val(t, "token")))
+		msg := map[string]any{"source": "continuum", "from": val(t, "from"), "to": val(t, "to"), "body": m.Title + "\n" + m.Body}
+		return postJSON(ctx, "https://rest.clicksend.com/v3/sms/send", map[string]string{"Authorization": auth}, map[string]any{"messages": []any{msg}})
+	}}
+}
+
+func messageBirdProvider() Provider {
+	return funcProvider{id: "messagebird", name: "MessageBird SMS", fields: smsFields("Originator", "Access key"), send: func(ctx context.Context, t store.Target, m Message) error {
+		return postForm(ctx, "https://rest.messagebird.com/messages", map[string]string{"Authorization": "AccessKey " + val(t, "token")}, url.Values{"originator": {val(t, "from")}, "recipients": {val(t, "to")}, "body": {m.Title + "\n" + m.Body}})
+	}}
+}
+
+func pushoverAliasProvider() Provider {
+	return funcProvider{id: "pushbullet", name: "Pushbullet", fields: []Field{{Key: "access_token", Label: "Access token", Secret: true, Required: true}, {Key: "email", Label: "Email/device/channel"}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		body := map[string]any{"type": "note", "title": m.Title, "body": m.Body}
+		if e := val(t, "email"); e != "" {
+			body["email"] = e
+		}
+		return postJSON(ctx, "https://api.pushbullet.com/v2/pushes", map[string]string{"Access-Token": val(t, "access_token")}, body)
+	}}
+}
+
+func pushbulletProvider() Provider { return pushoverAliasProvider() }
+
+func oneSignalProvider() Provider {
+	return funcProvider{id: "one_signal", name: "OneSignal", fields: []Field{{Key: "app_id", Label: "App ID", Required: true}, {Key: "api_key", Label: "REST API key", Secret: true, Required: true}, {Key: "segment", Label: "Segment"}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		segment := val(t, "segment")
+		if segment == "" {
+			segment = "Subscribed Users"
+		}
+		return postJSON(ctx, "https://onesignal.com/api/v1/notifications", map[string]string{"Authorization": "Basic " + val(t, "api_key")}, map[string]any{"app_id": val(t, "app_id"), "included_segments": []string{segment}, "headings": map[string]string{"en": m.Title}, "contents": map[string]string{"en": m.Body}})
+	}}
+}
+
+func opsgenieProvider() Provider {
+	return funcProvider{id: "opsgenie", name: "Opsgenie", fields: []Field{{Key: "api_key", Label: "API key", Secret: true, Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		return postJSON(ctx, "https://api.opsgenie.com/v2/alerts", map[string]string{"Authorization": "GenieKey " + val(t, "api_key")}, map[string]any{"message": m.Title, "description": m.Body, "source": "continuum"})
+	}}
+}
+
+func pagerDutyProvider() Provider {
+	return funcProvider{id: "pagerduty", name: "PagerDuty Events", fields: []Field{{Key: "routing_key", Label: "Routing key", Secret: true, Required: true}, {Key: "severity", Label: "Severity"}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		sev := val(t, "severity")
+		if sev == "" {
+			sev = "info"
+		}
+		return postJSON(ctx, "https://events.pagerduty.com/v2/enqueue", nil, map[string]any{"routing_key": val(t, "routing_key"), "event_action": "trigger", "payload": map[string]any{"summary": m.Title, "source": "continuum", "severity": sev, "custom_details": m.Body}})
+	}}
+}
+
+func postForm(ctx context.Context, endpoint string, headers map[string]string, values url.Values) error {
+	return postRaw(ctx, endpoint, "application/x-www-form-urlencoded", headers, values.Encode())
+}
+
+func postRaw(ctx context.Context, endpoint, contentType string, headers map[string]string, body string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", contentType)
+	for k, v := range headers {
+		if v != "" {
+			req.Header.Set(k, v)
+		}
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return fmt.Errorf("http %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func postJSONDecode(ctx context.Context, endpoint string, headers map[string]string, body any, out any) error {
+	reqBody, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(string(reqBody)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	for k, v := range headers {
+		if v != "" {
+			req.Header.Set(k, v)
+		}
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		snip, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("http %d: %s", resp.StatusCode, strings.TrimSpace(string(snip)))
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+func getJSON(ctx context.Context, endpoint string, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		snip, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return fmt.Errorf("http %d: %s", resp.StatusCode, strings.TrimSpace(string(snip)))
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+func emailAPIFields(domainLabel, keyLabel string) []Field {
+	fields := []Field{{Key: "api_key", Label: keyLabel, Secret: true, Required: true}, {Key: "from", Label: "From", Required: true}, {Key: "to", Label: "To", Required: true}}
+	if domainLabel != "" {
+		fields = append([]Field{{Key: "domain", Label: domainLabel, Required: true}}, fields...)
+	}
+	return fields
+}
+
+func smsFields(accountLabel, tokenLabel string) []Field {
+	return []Field{{Key: "account", Label: accountLabel, Secret: true, Required: true}, {Key: "token", Label: tokenLabel, Secret: true, Required: true}, {Key: "from", Label: "From", Required: true}, {Key: "to", Label: "To", Required: true}}
+}
+
+func emailList(raw string) []map[string]string {
+	var out []map[string]string
+	for _, e := range strings.Split(raw, ",") {
+		if s := strings.TrimSpace(e); s != "" {
+			out = append(out, map[string]string{"email": s})
+		}
+	}
+	return out
+}
+
+func xmlEscape(s string) string {
+	r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;", "'", "&apos;")
+	return r.Replace(s)
+}
+
+func quoteJSON(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
+func nowRFC3339() string { return time.Now().UTC().Format(time.RFC3339) }
+
+func tcpLine(ctx context.Context, address, line string) error {
+	d := net.Dialer{Timeout: 5 * time.Second}
+	c, err := d.DialContext(ctx, "tcp", address)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	_, err = c.Write([]byte(line))
+	return err
+}
