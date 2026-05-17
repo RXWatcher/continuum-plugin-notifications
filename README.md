@@ -1,61 +1,62 @@
-# continuum-plugin-notifications
+# Notifications for Continuum
 
-Native Go notification hub for Continuum. It receives host/plugin events,
-matches them against admin-defined rules, queues deliveries, retries failures,
-and sends notifications through built-in Go providers.
+`continuum.notifications` is Continuum's notification hub. It receives host and
+plugin events, matches them against operator-defined rules, queues deliveries,
+retries transient failures, and records delivery history.
 
-Notifications is a passive shared service. Other plugins publish their normal
-events whether or not `continuum.notifications` is installed, enabled, or
-configured; if this plugin is absent there is simply no notification subscriber
-to consume those events.
+The plugin is passive: other plugins publish their normal events whether or not
+Notifications is installed. If it is absent, workflows continue normally and no
+notification subscriber receives those events.
 
-This plugin does not shell out to Apprise and does not depend on Apprise URL
-syntax. Apprise is only the feature benchmark: broad provider coverage, one
-admin surface, test sends, retries, and delivery audit.
+## Features
 
-## Capabilities
-
-| Capability | Notes |
-|---|---|
-| `event_consumer.v1` (`notification-events`) | Receives Continuum/plugin events and queues matching notifications. |
-| `scheduled_task.v1` (`retry-notifications`) | Processes queued deliveries and retries transient failures. |
-| `http_routes.v1` (`admin`) | Full admin UI for providers, targets, rules, tests, and audit. |
+- Admin UI for providers, targets, rules, test sends, delivery audit, and
+  retries.
+- Event consumer that can match Continuum and plugin events.
+- Persistent delivery queue with retry handling.
+- Large provider catalog implemented directly in Go where possible.
+- Bridge providers for platform-specific or hardware transports when native
+  Linux operation is not available.
+- Scheduled retry worker for queued and transiently failed notifications.
 
 ## Providers
 
-The provider registry now exposes the Apprise-scale surface: 138 catalog
-entries, with every catalog entry backed by a Go `Provider` implementation.
-Most HTTP, chat, SMS, email, incident, media, and push services send directly
-from Go. A few platform-specific or hardware transports use explicit bridge
-providers because this plugin currently builds for Linux:
-
-- DBus / GLib / GNOME / macOS / Windows desktop notifications
-- Blink(1)
-- SMPP
-- SNS signed endpoint mode
-
-Those bridge providers still participate in the same rules, retries, test
-sends, and delivery audit path.
+The provider registry targets Apprise-scale coverage: HTTP services, chat,
+SMS, email, incident platforms, media systems, and push providers. Most send
+directly from Go. A small set of desktop or hardware transports are represented
+as explicit bridge providers.
 
 ## Configuration
 
-The host-level plugin config only needs the Postgres DSN for the dedicated
-`notifications` schema. Runtime settings, targets, and rules are edited from
-the plugin admin UI.
+| Key | Required | Description |
+|---|---|---|
+| `connection` | yes | Postgres DSN for the dedicated `notifications` schema. |
 
-```sql
-CREATE ROLE plugin_notifications WITH LOGIN PASSWORD '<chosen by operator>';
-CREATE SCHEMA notifications AUTHORIZATION plugin_notifications;
-GRANT CONNECT ON DATABASE continuum TO plugin_notifications;
-```
+Runtime provider settings, targets, and rules are managed in the plugin admin
+UI rather than the host-level manifest form.
 
 Example DSN:
 
 ```text
-postgres://plugin_notifications:...@host:5432/continuum?search_path=notifications&sslmode=disable
+postgres://plugin_notifications:password@postgres:5432/continuum?search_path=notifications&sslmode=disable
 ```
 
-## Build & test
+## Database Setup
+
+```sql
+CREATE ROLE plugin_notifications WITH LOGIN PASSWORD '<chosen>';
+CREATE SCHEMA notifications AUTHORIZATION plugin_notifications;
+GRANT CONNECT ON DATABASE continuum TO plugin_notifications;
+```
+
+## Operations
+
+- Start with a single test target and rule, then broaden event filters.
+- Use test sends before enabling a new provider for production events.
+- Review the delivery audit after changing provider credentials.
+- Keep notification rules specific enough to avoid duplicate alerts.
+
+## Build And Test
 
 ```bash
 make build
