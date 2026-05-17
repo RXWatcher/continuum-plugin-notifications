@@ -8,6 +8,10 @@ The plugin is passive: other plugins publish their normal events whether or not
 Notifications is installed. If it is absent, workflows continue normally and no
 notification subscriber receives those events.
 
+## Detailed Operations Docs
+
+- [Setup, debugging, and communication flows](docs/setup-debug-flows.md)
+
 ## Features
 
 - Admin UI for providers, targets, rules, test sends, delivery audit, and
