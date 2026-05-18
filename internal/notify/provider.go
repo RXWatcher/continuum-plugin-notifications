@@ -102,12 +102,35 @@ func (r *Registry) Provider(id string) (Provider, bool) {
 func (r *Registry) Catalog() []map[string]any {
 	out := make([]map[string]any, 0, len(r.providers))
 	for _, p := range r.providers {
-		out = append(out, map[string]any{"id": p.ID(), "name": p.DisplayName(), "fields": p.Fields(), "capabilities": p.Capabilities(), "implemented": true})
+		deliveryKind, implementationNote := providerDeliveryKind(p)
+		out = append(out, map[string]any{
+			"id":                  p.ID(),
+			"name":                p.DisplayName(),
+			"fields":              p.Fields(),
+			"capabilities":        p.Capabilities(),
+			"implemented":         true,
+			"delivery_kind":       deliveryKind,
+			"implementation_note": implementationNote,
+		})
 	}
 	sort.Slice(out, func(i, j int) bool {
 		return out[i]["name"].(string) < out[j]["name"].(string)
 	})
 	return out
+}
+
+func providerDeliveryKind(p Provider) (string, string) {
+	id := strings.ToLower(p.ID())
+	name := strings.ToLower(p.DisplayName())
+	for _, field := range p.Fields() {
+		if field.Key == "bridge_url" {
+			return "bridge", "Requires an external bridge service configured by the operator."
+		}
+	}
+	if strings.Contains(name, " bridge") || strings.HasSuffix(name, "bridge") || strings.Contains(id, "bridge") {
+		return "bridge", "Requires an external bridge service configured by the operator."
+	}
+	return "native", "Implemented directly by this plugin."
 }
 
 func (r *Registry) Send(ctx context.Context, target store.Target, msg Message) error {

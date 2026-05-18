@@ -32,7 +32,7 @@ type ProviderField = {
   default?: string;
   options?: { value: string; label: string }[];
 };
-type Provider = { id: string; name: string; fields: ProviderField[] };
+type Provider = { id: string; name: string; fields: ProviderField[]; delivery_kind?: string; implementation_note?: string };
 type ContinuumUser = { id: number; username: string; email: string; role: string; enabled: boolean };
 type Target = { id?: string; name: string; provider: string; enabled: boolean; config: Record<string, string> };
 type Rule = { id?: string; name: string; event_pattern: string; target_ids: string[]; enabled: boolean; title: string; body: string };
@@ -280,7 +280,7 @@ export default function App() {
 }
 
 function ProviderGrid({ providers }: { providers: Provider[] }) {
-  return <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">{providers.map((p) => <section key={p.id} className="surface-panel p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold">{p.name}</h3><p className="text-muted-foreground mt-1 font-mono text-xs">{p.id}</p></div><Badge tone="success">Native</Badge></div><div className="mt-4 flex flex-wrap gap-1.5">{p.fields.slice(0, 5).map((f) => <span key={f.key} className="chip">{f.label}</span>)}{p.fields.length > 5 && <span className="chip">+{p.fields.length - 5}</span>}</div></section>)}</div>;
+  return <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">{providers.map((p) => { const bridge = p.delivery_kind === "bridge"; return <section key={p.id} className="surface-panel p-4"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate text-sm font-semibold">{p.name}</h3><p className="text-muted-foreground mt-1 font-mono text-xs">{p.id}</p></div><Badge tone={bridge ? "warning" : "success"}>{bridge ? "Bridge" : "Native"}</Badge></div><p className="text-muted-foreground mt-3 text-xs">{p.implementation_note || (bridge ? "Requires an external bridge service configured by the operator." : "Implemented directly by this plugin.")}</p><div className="mt-4 flex flex-wrap gap-1.5">{p.fields.slice(0, 5).map((f) => <span key={f.key} className="chip">{f.label}</span>)}{p.fields.length > 5 && <span className="chip">+{p.fields.length - 5}</span>}</div></section>; })}</div>;
 }
 
 function TargetsTable({ rows, providers, onEdit, onDelete, onTest }: { rows: Target[]; providers: Provider[]; onEdit: (row: Target) => void; onDelete: (id: string) => void; onTest: (id: string) => void }) {
@@ -524,7 +524,7 @@ function tabTitle(tab: Tab) {
 
 function tabSubtitle(tab: Tab) {
   return ({
-    providers: "All native Go delivery providers available to rules and targets.",
+    providers: "Native and bridge-backed delivery providers available to rules and targets.",
     targets: "Configured destinations with credentials and provider-specific settings.",
     rules: "Event patterns mapped to one or more notification targets.",
     contacts: "Per-user addresses and handles available to the base app and plugins.",

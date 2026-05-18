@@ -124,3 +124,28 @@ func TestProviderConfigurationMetadata(t *testing.T) {
 		}
 	}
 }
+
+func TestProviderCatalogLabelsBridgeBackedProviders(t *testing.T) {
+	catalog := NewRegistry(5 * time.Second).Catalog()
+	byID := map[string]map[string]any{}
+	for _, row := range catalog {
+		byID[row["id"].(string)] = row
+	}
+
+	for _, id := range []string{"dbus", "smpp", "blink1", "reddit"} {
+		row := byID[id]
+		if row == nil {
+			t.Fatalf("provider %q missing", id)
+		}
+		if got := row["delivery_kind"]; got != "bridge" {
+			t.Fatalf("%s delivery_kind = %v, want bridge", id, got)
+		}
+		if got := row["implementation_note"]; got == "" {
+			t.Fatalf("%s should include implementation_note", id)
+		}
+	}
+
+	if got := byID["smtp"]["delivery_kind"]; got != "native" {
+		t.Fatalf("smtp delivery_kind = %v, want native", got)
+	}
+}
