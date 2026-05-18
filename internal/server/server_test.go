@@ -20,6 +20,20 @@ func TestAPIReportsNotConfiguredInsteadOfPanicking(t *testing.T) {
 	}
 }
 
+func TestServiceSendRequiresAdminBeforeConfiguredStore(t *testing.T) {
+	h := New(Deps{}).Handler()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/send", nil)
+	req.Header.Set("X-Continuum-User-Id", "user-1")
+	req.Header.Set("X-Continuum-User-Role", "user")
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusForbidden, rec.Body.String())
+	}
+}
+
 func TestComputeBaseHref(t *testing.T) {
 	tests := map[string]string{
 		"/admin":                   "./",

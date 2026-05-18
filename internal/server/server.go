@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/hashicorp/go-hclog"
 
+	"github.com/ContinuumApp/continuum-plugin-notifications/internal/auth"
 	"github.com/ContinuumApp/continuum-plugin-notifications/internal/notify"
 	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
 )
@@ -89,11 +90,10 @@ func (s *Server) Handler() http.Handler {
 		r.Put("/preferences/{userID}", s.handlePutPreference)
 	})
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(s.requireConfigured)
-		r.Get("/capabilities", s.handleCapabilities)
-		r.Get("/targets", s.handlePublicTargets)
-		r.Post("/send", s.handleSend)
-		r.Get("/deliveries/{id}", s.handleGetDelivery)
+		r.With(s.requireConfigured).Get("/capabilities", s.handleCapabilities)
+		r.With(s.requireConfigured).Get("/targets", s.handlePublicTargets)
+		r.With(s.requireAdmin, s.requireConfigured).Post("/send", s.handleSend)
+		r.With(s.requireConfigured).Get("/deliveries/{id}", s.handleGetDelivery)
 	})
 	r.Get("/admin", s.handleSPA)
 	r.Get("/admin/*", s.handleSPA)
@@ -107,6 +107,21 @@ func (s *Server) requireConfigured(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if s.deps.Store == nil {
 			writeError(w, http.StatusServiceUnavailable, "notifications plugin is not configured")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) requireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, ok := auth.FromRequest(r)
+		if !ok {
+			writeError(w, http.StatusUnauthorized, "missing identity")
+			return
+		}
+		if !id.IsAdmin {
+			writeError(w, http.StatusForbidden, "admin required")
 			return
 		}
 		next.ServeHTTP(w, r)

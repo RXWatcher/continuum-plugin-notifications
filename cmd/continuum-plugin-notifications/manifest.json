@@ -82,6 +82,12 @@
       "access": "admin"
     },
     {
+      "id": "service_send",
+      "method": "*",
+      "path": "/api/v1/send",
+      "access": "admin"
+    },
+    {
       "id": "service_api",
       "method": "*",
       "path": "/api/v1/*",
