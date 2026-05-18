@@ -2,6 +2,7 @@ import { cloneElement, useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 import {
   Activity,
+  ArrowLeft,
   Bell,
   CheckCircle2,
   Edit3,
@@ -205,6 +206,15 @@ export default function App() {
       <header className="border-border sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 py-3">
           <div className="flex min-w-0 items-center gap-3">
+            <a
+              href="/admin/plugins"
+              className="text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+              title="Back to Continuum plugins"
+            >
+              <ArrowLeft className="size-4" />
+              <span className="hidden sm:inline">Continuum</span>
+            </a>
+            <span className="text-border hidden sm:inline" aria-hidden>/</span>
             <span className="bg-primary/10 text-primary grid size-10 place-items-center rounded-md"><Bell className="size-5" /></span>
             <div className="min-w-0">
               <h1 className="truncate text-lg font-semibold">Notifications Command Center</h1>
