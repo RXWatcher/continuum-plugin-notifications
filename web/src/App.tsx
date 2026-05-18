@@ -18,6 +18,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
+import { mountPath } from "./lib/mountPath";
 
 type ProviderField = {
   key: string;
@@ -93,7 +94,7 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 const api = (path: string, init?: RequestInit) =>
-  authHeaders().then((headers) => fetch(`api/admin${path}`, {
+  authHeaders().then((headers) => fetch(`${mountPath()}/api/admin${path}`, {
       ...init,
       credentials: "include",
       headers: { "Content-Type": "application/json", ...headers, ...(init?.headers || {}) },

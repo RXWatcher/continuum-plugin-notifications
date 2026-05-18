@@ -3,7 +3,7 @@
 // from window.location.pathname. Returns empty string on the dev server
 // (no plugin proxy prefix).
 export function extractMountPath(pathname: string): string {
-  const m = pathname.match(/^(\/api\/v1\/plugins\/\d+)/);
+  const m = pathname.match(/^(\/api\/v1\/plugins\/[^/]+)/);
   return m ? m[1] : '';
 }
 

@@ -10,10 +10,15 @@ build: web
 # Build the SPA so web/embed.go has dist/ to embed. Re-runs idempotently;
 # vite skips work if nothing changed.
 web:
-	cd web && $(PNPM) install --silent && $(PNPM) build
+	cd web && $(PNPM) install --frozen-lockfile && $(PNPM) build
 
-test: web
+test: test-go test-web
+
+test-go:
 	$(GO) test ./...
+
+test-web:
+	cd web && $(PNPM) run test --run
 
 clean:
 	rm -f $(BINARY)

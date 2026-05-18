@@ -64,6 +64,7 @@ func New(d Deps) *Server { return &Server{deps: d} }
 func (s *Server) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Route("/api/admin", func(r chi.Router) {
+		r.Use(s.requireConfigured)
 		r.Get("/status", s.handleStatus)
 		r.Get("/providers", s.handleProviders)
 		r.Get("/config", s.handleGetConfig)
@@ -88,6 +89,7 @@ func (s *Server) Handler() http.Handler {
 		r.Put("/preferences/{userID}", s.handlePutPreference)
 	})
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(s.requireConfigured)
 		r.Get("/capabilities", s.handleCapabilities)
 		r.Get("/targets", s.handlePublicTargets)
 		r.Post("/send", s.handleSend)
@@ -99,6 +101,16 @@ func (s *Server) Handler() http.Handler {
 		r.Get("/assets/*", http.FileServer(s.deps.WebFS).ServeHTTP)
 	}
 	return r
+}
+
+func (s *Server) requireConfigured(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.deps.Store == nil {
+			writeError(w, http.StatusServiceUnavailable, "notifications plugin is not configured")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) handleCapabilities(w http.ResponseWriter, r *http.Request) {
