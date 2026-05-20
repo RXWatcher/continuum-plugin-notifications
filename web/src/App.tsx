@@ -20,19 +20,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { mountPath } from "./lib/mountPath";
+import { enhanceProviderField, fieldSection, providerHelpText } from "./lib/providerPresentation";
+import type { FieldSection, Provider, ProviderField } from "./lib/providerPresentation";
 
-type ProviderField = {
-  key: string;
-  label: string;
-  secret?: boolean;
-  required?: boolean;
-  control?: "text" | "password" | "url" | "email" | "number" | "checkbox" | "options" | "color";
-  placeholder?: string;
-  help?: string;
-  default?: string;
-  options?: { value: string; label: string }[];
-};
-type Provider = { id: string; name: string; fields: ProviderField[]; delivery_kind?: string; implementation_note?: string };
 type ContinuumUser = { id: number; username: string; email: string; role: string; enabled: boolean };
 type Target = { id?: string; name: string; provider: string; enabled: boolean; config: Record<string, string> };
 type Rule = { id?: string; name: string; event_pattern: string; target_ids: string[]; enabled: boolean; title: string; body: string };
@@ -300,7 +290,44 @@ function ContactsTable({ rows, users, onEdit, onDelete }: { rows: Contact[]; use
 }
 
 function TargetEditor({ target, providers, selectedProvider, users, setTarget, saveTarget }: { target: Target; providers: Provider[]; selectedProvider?: Provider; users: ContinuumUser[]; setTarget: (t: Target) => void; saveTarget: () => void }) {
-  return <Inspector title={target.id ? "Edit Target" : "Create Target"} icon={<Radio />}><div className="editor-grid"><Input label="Name" value={target.name} onChange={(v) => setTarget({ ...target, name: v })} /><ProviderPicker providers={providers} value={target.provider} onChange={(provider) => setTarget({ ...target, provider, config: providerDefaults(providers.find((p) => p.id === provider)) })} /></div><div className="form-grid provider-config-grid">{selectedProvider?.fields.map((f) => <FieldInput key={f.key} field={f} providerID={selectedProvider.id} users={users} value={target.config[f.key] ?? ""} onChange={(v) => setTarget({ ...target, config: { ...target.config, [f.key]: v } })} />)}</div><div className="editor-actions"><label className="checkline"><input type="checkbox" checked={target.enabled} onChange={(e) => setTarget({ ...target, enabled: e.target.checked })} /> Enabled</label><button className="primary compact" onClick={saveTarget}><Save className="size-4" /> Save target</button></div></Inspector>;
+  const providerFields = selectedProvider?.fields.map((field) => enhanceProviderField(field, selectedProvider.id)) ?? [];
+  const sections = groupFieldsBySection(providerFields, selectedProvider?.id ?? "");
+
+  return (
+    <Inspector title={target.id ? "Edit Target" : "Create Target"} icon={<Radio />}>
+      <div className="target-workflow">
+        <section className="setup-section">
+          <div className="setup-section-head">
+            <h3>Target identity</h3>
+            <p>Name this notification route.</p>
+          </div>
+          <div className="editor-grid">
+            <Input label="Name" value={target.name} onChange={(v) => setTarget({ ...target, name: v })} />
+          </div>
+        </section>
+        <section className="setup-section">
+          <div className="setup-section-head">
+            <h3>Delivery provider</h3>
+            <p>Choose where Continuum should send this notification.</p>
+          </div>
+          <ProviderPicker
+            providers={providers}
+            value={target.provider}
+            onChange={(provider) => setTarget({ ...target, provider, config: providerDefaults(providers.find((p) => p.id === provider)) })}
+          />
+          <ProviderSummary provider={selectedProvider} />
+        </section>
+        {sections.destination.length > 0 && <FieldSectionPanel title="Destination" description="The endpoint, host, or recipient this provider delivers to." fields={sections.destination} providerID={selectedProvider?.id ?? ""} users={users} target={target} setTarget={setTarget} />}
+        {sections.auth.length > 0 && <FieldSectionPanel title="Authentication" description="Tokens, passwords, and headers that authorize delivery." fields={sections.auth} providerID={selectedProvider?.id ?? ""} users={users} target={target} setTarget={setTarget} />}
+        {sections.options.length > 0 && <FieldSectionPanel title="Options" description="Provider-specific knobs that change how the message is sent." fields={sections.options} providerID={selectedProvider?.id ?? ""} users={users} target={target} setTarget={setTarget} />}
+        {sections.advanced.length > 0 && <FieldSectionPanel title="Advanced" description="Less common settings exposed by the provider." fields={sections.advanced} providerID={selectedProvider?.id ?? ""} users={users} target={target} setTarget={setTarget} />}
+      </div>
+      <div className="editor-actions">
+        <label className="checkline"><input type="checkbox" checked={target.enabled} onChange={(e) => setTarget({ ...target, enabled: e.target.checked })} /> Enabled</label>
+        <button className="primary compact" onClick={saveTarget}><Save className="size-4" /> Save target</button>
+      </div>
+    </Inspector>
+  );
 }
 
 function ContactEditor({ contact, users, setContact, saveContact }: { contact: Contact; users: ContinuumUser[]; setContact: (c: Contact) => void; saveContact: () => void }) {
@@ -320,6 +347,41 @@ function ProviderPicker({ providers, value, onChange }: { providers: Provider[];
   const selected = providers.find((p) => p.id === value);
   const groups = useMemo(() => groupProviders(providers, filter), [providers, filter]);
   return <div className="field"><span>Provider</span><div className="provider-picker"><div className="provider-selected"><span>{selected?.name || "Select a provider"}</span><code>{selected?.id || ""}</code></div><input className="input" placeholder="Search providers" value={filter} onChange={(e) => setFilter(e.target.value)} /><div className="provider-groups">{groups.map((group) => <details key={group.key} className="provider-group" open={group.open}><summary><span>{group.label}</span><code>{group.rows.length}</code></summary><div className="provider-list">{group.rows.map((p) => <button key={p.id} type="button" className={`provider-option ${p.id === value ? "active" : ""}`} onClick={() => onChange(p.id)}><span>{p.name}</span><code>{p.id}</code></button>)}</div></details>)}</div></div></div>;
+}
+
+function ProviderSummary({ provider }: { provider?: Provider }) {
+  return (
+    <div className="provider-summary">
+      <div>
+        <strong>{provider?.name || "No provider selected"}</strong>
+        <p>{providerHelpText(provider)}</p>
+      </div>
+      {provider && <Badge tone={provider.delivery_kind === "bridge" ? "warning" : "success"}>{provider.delivery_kind === "bridge" ? "Bridge" : "Native"}</Badge>}
+    </div>
+  );
+}
+
+function FieldSectionPanel({ title, description, fields, providerID, users, target, setTarget }: { title: string; description: string; fields: ProviderField[]; providerID: string; users: ContinuumUser[]; target: Target; setTarget: (t: Target) => void }) {
+  return (
+    <section className="setup-section">
+      <div className="setup-section-head">
+        <h3>{title}</h3>
+        <p>{description}</p>
+      </div>
+      <div className="form-grid provider-config-grid">
+        {fields.map((field) => (
+          <FieldInput
+            key={field.key}
+            field={field}
+            providerID={providerID}
+            users={users}
+            value={target.config[field.key] ?? ""}
+            onChange={(v) => setTarget({ ...target, config: { ...target.config, [field.key]: v } })}
+          />
+        ))}
+      </div>
+    </section>
+  );
 }
 
 type ProviderGroup = {
@@ -410,7 +472,7 @@ function providerPopularityRank(provider: Provider): number {
 }
 
 function RuleEditor({ rule, targets, setRule, saveRule }: { rule: Rule; targets: Target[]; setRule: (r: Rule) => void; saveRule: () => void }) {
-  return <Inspector title={rule.id ? "Edit Rule" : "Create Rule"} icon={<Route />}><div className="editor-grid"><Input label="Name" value={rule.name} onChange={(v) => setRule({ ...rule, name: v })} /><Input label="Event pattern" value={rule.event_pattern} onChange={(v) => setRule({ ...rule, event_pattern: v })} /><Input label="Title template" value={rule.title} onChange={(v) => setRule({ ...rule, title: v })} /></div><div className="editor-grid"><label className="field">Body template<textarea className="input min-h-20" value={rule.body} onChange={(e) => setRule({ ...rule, body: e.target.value })} /></label><TargetPicker targets={targets} value={rule.target_ids} onChange={(target_ids) => setRule({ ...rule, target_ids })} /></div><div className="editor-actions"><label className="checkline"><input type="checkbox" checked={rule.enabled} onChange={(e) => setRule({ ...rule, enabled: e.target.checked })} /> Enabled</label><button className="primary compact" onClick={saveRule}><Save className="size-4" /> Save rule</button></div></Inspector>;
+  return <Inspector title={rule.id ? "Edit Rule" : "Create Rule"} icon={<Route />}><div className="editor-grid"><Input label="Name" value={rule.name} onChange={(v) => setRule({ ...rule, name: v })} /><label className="field"><span>Event pattern</span><input className="input" value={rule.event_pattern} onChange={(e) => setRule({ ...rule, event_pattern: e.target.value })} /><span className="preset-row">{["plugin.*", "plugin.request.*", "media.*", "system.*"].map((preset) => <button key={preset} type="button" className={`option-pill ${rule.event_pattern === preset ? "active" : ""}`} onClick={() => setRule({ ...rule, event_pattern: preset })}>{preset}</button>)}</span></label><Input label="Title template" value={rule.title} onChange={(v) => setRule({ ...rule, title: v })} /></div><div className="editor-grid"><label className="field">Body template<textarea className="input min-h-20" value={rule.body} onChange={(e) => setRule({ ...rule, body: e.target.value })} /></label><TargetPicker targets={targets} value={rule.target_ids} onChange={(target_ids) => setRule({ ...rule, target_ids })} /></div><div className="editor-actions"><label className="checkline"><input type="checkbox" checked={rule.enabled} onChange={(e) => setRule({ ...rule, enabled: e.target.checked })} /> Enabled</label><button className="primary compact" disabled={targets.length === 0} onClick={saveRule}><Save className="size-4" /> Save rule</button></div></Inspector>;
 }
 
 function TargetPicker({ targets, value, onChange }: { targets: Target[]; value: string[]; onChange: (ids: string[]) => void }) {
@@ -439,19 +501,26 @@ function Input({ label, value, onChange, type = "text" }: { label: string; value
 function FieldInput({ field, providerID, users, value, onChange }: { field: ProviderField; providerID: string; users: ContinuumUser[]; value: string; onChange: (v: string) => void }) {
   const displayValue = value || field.default || "";
   const label = <span>{field.label}{field.required && <b className="required-dot">*</b>}</span>;
+  const wide = fieldSection(field, providerID) === "destination" || fieldSection(field, providerID) === "auth";
   if (field.key === "to" && isEmailProvider(providerID)) {
     return <EmailRecipientField label={label} field={field} users={users} value={value} onChange={onChange} />;
   }
   if (field.control === "checkbox") {
-    return <label className="field field-check">{label}<span className="checkline"><input type="checkbox" checked={isTruthy(displayValue)} onChange={(e) => onChange(e.target.checked ? "true" : "false")} /> Enabled</span>{field.help && <small>{field.help}</small>}</label>;
+    return <label className={`field field-check ${wide ? "field-wide" : ""}`}>{label}<span className="checkline"><input type="checkbox" checked={isTruthy(displayValue)} onChange={(e) => onChange(e.target.checked ? "true" : "false")} /> Enabled</span>{field.help && <small>{field.help}</small>}</label>;
   }
   if (field.control === "options" && field.options?.length) {
-    return <label className="field">{label}<span className="option-grid">{field.options.map((option) => <button key={option.value} type="button" className={`option-pill ${displayValue === option.value ? "active" : ""}`} onClick={() => onChange(option.value)}>{option.label}</button>)}</span>{field.help && <small>{field.help}</small>}</label>;
+    return <label className={`field ${wide ? "field-wide" : ""}`}>{label}<span className="option-grid">{field.options.map((option) => <button key={option.value} type="button" className={`option-pill ${displayValue === option.value ? "active" : ""}`} onClick={() => onChange(option.value)}>{option.label}</button>)}</span>{field.help && <small>{field.help}</small>}</label>;
   }
   if (field.control === "color") {
-    return <label className="field">{label}<span className="color-row"><input className="color-input" type="color" value={displayValue || "#00aaff"} onChange={(e) => onChange(e.target.value)} /><input className="input" value={displayValue} placeholder={field.placeholder || field.default || "#00aaff"} onChange={(e) => onChange(e.target.value)} /></span>{field.help && <small>{field.help}</small>}</label>;
+    return <label className={`field ${wide ? "field-wide" : ""}`}>{label}<span className="color-row"><input className="color-input" type="color" value={displayValue || "#00aaff"} onChange={(e) => onChange(e.target.value)} /><input className="input" value={displayValue} placeholder={field.placeholder || field.default || "#00aaff"} onChange={(e) => onChange(e.target.value)} /></span>{field.help && <small>{field.help}</small>}</label>;
   }
-  return <label className="field">{label}<input className="input" type={field.secret ? "password" : field.control || "text"} value={value} placeholder={field.placeholder || field.default || ""} onChange={(e) => onChange(e.target.value)} />{field.help && <small>{field.help}</small>}</label>;
+  return <label className={`field ${wide ? "field-wide" : ""}`}>{label}<input className="input" type={field.secret ? "password" : field.control || "text"} value={value} placeholder={field.placeholder || field.default || ""} onChange={(e) => onChange(e.target.value)} />{field.help && <small>{field.help}</small>}</label>;
+}
+
+function groupFieldsBySection(fields: ProviderField[], providerID: string) {
+  const sections: Record<FieldSection, ProviderField[]> = { destination: [], auth: [], options: [], advanced: [] };
+  for (const field of fields) sections[fieldSection(field, providerID)].push(field);
+  return sections;
 }
 
 function isTruthy(value: string) {
