@@ -94,7 +94,12 @@ GRANT CONNECT ON DATABASE continuum TO plugin_notifications;
 
 ## Detailed docs
 
-- [Setup, debugging, and communication flows](docs/setup-debug-flows.md)
+- [Operations](docs/operations.md) — admin UI map, target and rule lifecycles, app config.
+- [Rule matching](docs/rule-matching.md) — pattern semantics and template expansion.
+- [Direct sends](docs/direct-send.md) — `notifications.send` event and `POST /api/v1/send`.
+- [Delivery queue](docs/delivery-queue.md) — queue states, retries, idempotency, manual interventions.
+- [Provider catalog](docs/provider-catalog.md) — native vs bridge, recipient modes, common failure categories.
+- [Debugging runbook](docs/debugging.md) — symptom-driven diagnosis.
 
 ## Build and release
 
