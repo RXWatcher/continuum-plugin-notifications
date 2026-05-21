@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/hashicorp/go-hclog"
 
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/auth"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/notify"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/auth"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/notify"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
 )
 
 func errString(msg string) error { return errors.New(msg) }

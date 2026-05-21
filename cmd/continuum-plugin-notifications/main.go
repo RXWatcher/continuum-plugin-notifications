@@ -18,15 +18,15 @@ import (
 	publicmanifest "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginsdk/manifest"
 	sdkruntime "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginsdk/runtime"
 
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/consumer"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/httproutes"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/migrate"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/notify"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/poll"
-	pluginrt "github.com/ContinuumApp/continuum-plugin-notifications/internal/runtime"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/server"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
-	"github.com/ContinuumApp/continuum-plugin-notifications/web"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/consumer"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/httproutes"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/migrate"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/notify"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/poll"
+	pluginrt "github.com/RXWatcher/continuum-plugin-notifications/internal/runtime"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/server"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/continuum-plugin-notifications/web"
 )
 
 //go:embed manifest.json

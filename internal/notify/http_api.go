@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
 )
 
 type funcProvider struct {

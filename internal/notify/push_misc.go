@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
 )
 
 func remainingPushProviders() []Provider {

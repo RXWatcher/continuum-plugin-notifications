@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
 )
 
 func TestCatalogParitySurface(t *testing.T) {

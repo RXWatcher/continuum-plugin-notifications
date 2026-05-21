@@ -8,8 +8,8 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/notify"
-	"github.com/ContinuumApp/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/notify"
+	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
 	pluginv1 "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginproto/continuum/plugin/v1"
 )
 
