@@ -24,8 +24,8 @@ func TestServiceSendRequiresAdminBeforeConfiguredStore(t *testing.T) {
 	h := New(Deps{}).Handler()
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/send", nil)
-	req.Header.Set("X-Continuum-User-Id", "user-1")
-	req.Header.Set("X-Continuum-User-Role", "user")
+	req.Header.Set("X-Silo-User-Id", "user-1")
+	req.Header.Set("X-Silo-User-Role", "user")
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
 

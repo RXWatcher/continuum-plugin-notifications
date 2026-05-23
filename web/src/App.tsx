@@ -23,7 +23,7 @@ import { mountPath } from "./lib/mountPath";
 import { enhanceProviderField, fieldSection, providerHelpText } from "./lib/providerPresentation";
 import type { FieldSection, Provider, ProviderField } from "./lib/providerPresentation";
 
-type ContinuumUser = { id: number; username: string; email: string; role: string; enabled: boolean };
+type SiloUser = { id: number; username: string; email: string; role: string; enabled: boolean };
 type Target = { id?: string; name: string; provider: string; enabled: boolean; config: Record<string, string> };
 type Rule = { id?: string; name: string; event_pattern: string; target_ids: string[]; enabled: boolean; title: string; body: string };
 type Delivery = { id: string; event_name: string; provider: string; title: string; status: string; attempts: number; last_error?: string; created_at: string };
@@ -94,7 +94,7 @@ const api = (path: string, init?: RequestInit) =>
     const contentType = r.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       if (r.status === 401 || r.status === 403) {
-        throw new Error("Sign in to Continuum as an admin, then reopen Notifications from the admin sidebar.");
+        throw new Error("Sign in to Silo as an admin, then reopen Notifications from the admin sidebar.");
       }
       throw new Error(`Expected JSON from ${r.url}, received: ${text.slice(0, 120)}`);
     }
@@ -133,7 +133,7 @@ export default function App() {
   const [targets, setTargets] = useState<Target[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [users, setUsers] = useState<ContinuumUser[]>([]);
+  const [users, setUsers] = useState<SiloUser[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [target, setTarget] = useState<Target>(emptyTarget());
   const [rule, setRule] = useState<Rule>(emptyRule());
@@ -199,10 +199,10 @@ export default function App() {
             <a
               href="/admin/plugins"
               className="text-muted-foreground hover:bg-accent hover:text-accent-foreground inline-flex min-h-9 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors"
-              title="Back to Continuum plugins"
+              title="Back to Silo plugins"
             >
               <ArrowLeft className="size-4" />
-              <span className="hidden sm:inline">Continuum</span>
+              <span className="hidden sm:inline">Silo</span>
             </a>
             <span className="text-border hidden sm:inline" aria-hidden>/</span>
             <span className="bg-primary/10 text-primary grid size-10 place-items-center rounded-md"><Bell className="size-5" /></span>
@@ -285,11 +285,11 @@ function AuditTable({ rows }: { rows: Delivery[] }) {
   return <DataPanel empty="No deliveries yet."><table className="data-table"><thead><tr><Head>Event</Head><Head>Provider</Head><Head>Status</Head><Head>Attempts</Head><Head>Error</Head></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><Cell mono>{row.event_name}</Cell><Cell>{row.provider}</Cell><Cell><Badge tone={row.status === "failed" ? "danger" : row.status === "delivered" ? "success" : "warning"}>{row.status}</Badge></Cell><Cell>{row.attempts}</Cell><Cell>{row.last_error || ""}</Cell></tr>)}</tbody></table>{rows.length === 0 && <Empty text="No deliveries yet." />}</DataPanel>;
 }
 
-function ContactsTable({ rows, users, onEdit, onDelete }: { rows: Contact[]; users: ContinuumUser[]; onEdit: (row: Contact) => void; onDelete: (id: string) => void }) {
-  return <DataPanel empty="No contacts configured. Sync Continuum emails or create a contact above."><table className="data-table"><thead><tr><Head>User</Head><Head>Kind</Head><Head>Value</Head><Head>Status</Head><Head align="right">Actions</Head></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><Cell strong>{users.find((u) => String(u.id) === row.user_id)?.username || row.user_id}</Cell><Cell>{row.kind}</Cell><Cell>{row.value}</Cell><Cell><Badge tone={row.enabled ? "success" : "muted"}>{row.enabled ? "Enabled" : "Disabled"}</Badge></Cell><Cell align="right"><ActionGroup><button className="icon" title="Edit" onClick={() => onEdit(row)}><Edit3 className="size-4" /></button><button className="icon danger" title="Delete" onClick={() => row.id && onDelete(row.id)}><Trash2 className="size-4" /></button></ActionGroup></Cell></tr>)}</tbody></table>{rows.length === 0 && <Empty text="No contacts configured. Sync Continuum emails or create a contact above." />}</DataPanel>;
+function ContactsTable({ rows, users, onEdit, onDelete }: { rows: Contact[]; users: SiloUser[]; onEdit: (row: Contact) => void; onDelete: (id: string) => void }) {
+  return <DataPanel empty="No contacts configured. Sync Silo emails or create a contact above."><table className="data-table"><thead><tr><Head>User</Head><Head>Kind</Head><Head>Value</Head><Head>Status</Head><Head align="right">Actions</Head></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><Cell strong>{users.find((u) => String(u.id) === row.user_id)?.username || row.user_id}</Cell><Cell>{row.kind}</Cell><Cell>{row.value}</Cell><Cell><Badge tone={row.enabled ? "success" : "muted"}>{row.enabled ? "Enabled" : "Disabled"}</Badge></Cell><Cell align="right"><ActionGroup><button className="icon" title="Edit" onClick={() => onEdit(row)}><Edit3 className="size-4" /></button><button className="icon danger" title="Delete" onClick={() => row.id && onDelete(row.id)}><Trash2 className="size-4" /></button></ActionGroup></Cell></tr>)}</tbody></table>{rows.length === 0 && <Empty text="No contacts configured. Sync Silo emails or create a contact above." />}</DataPanel>;
 }
 
-function TargetEditor({ target, providers, selectedProvider, users, setTarget, saveTarget }: { target: Target; providers: Provider[]; selectedProvider?: Provider; users: ContinuumUser[]; setTarget: (t: Target) => void; saveTarget: () => void }) {
+function TargetEditor({ target, providers, selectedProvider, users, setTarget, saveTarget }: { target: Target; providers: Provider[]; selectedProvider?: Provider; users: SiloUser[]; setTarget: (t: Target) => void; saveTarget: () => void }) {
   const providerFields = selectedProvider?.fields.map((field) => enhanceProviderField(field, selectedProvider.id)) ?? [];
   const sections = groupFieldsBySection(providerFields, selectedProvider?.id ?? "");
 
@@ -308,7 +308,7 @@ function TargetEditor({ target, providers, selectedProvider, users, setTarget, s
         <section className="setup-section">
           <div className="setup-section-head">
             <h3>Delivery provider</h3>
-            <p>Choose where Continuum should send this notification.</p>
+            <p>Choose where Silo should send this notification.</p>
           </div>
           <ProviderPicker
             providers={providers}
@@ -330,8 +330,8 @@ function TargetEditor({ target, providers, selectedProvider, users, setTarget, s
   );
 }
 
-function ContactEditor({ contact, users, setContact, saveContact }: { contact: Contact; users: ContinuumUser[]; setContact: (c: Contact) => void; saveContact: () => void }) {
-  return <Inspector title={contact.id ? "Edit Contact" : "Create Contact"} icon={<Users />}><div className="editor-grid"><label className="field"><span>User</span><div className="target-list">{users.length === 0 ? <div className="target-empty">No Continuum users available.</div> : users.map((u) => <label key={u.id} className="target-option"><input type="radio" checked={contact.user_id === String(u.id)} onChange={() => setContact({ ...contact, user_id: String(u.id), value: contact.kind === "email" ? u.email : contact.value, label: contact.label || u.username })} /><span>{u.username || u.email}</span><code>{u.email}</code></label>)}</div></label><div className="editor-grid"><Input label="Kind" value={contact.kind} onChange={(kind) => setContact({ ...contact, kind })} /><Input label="Value" value={contact.value} onChange={(value) => setContact({ ...contact, value })} /><Input label="Label" value={contact.label} onChange={(label) => setContact({ ...contact, label })} /></div></div><div className="editor-actions"><span className="option-grid"><label className="checkline"><input type="checkbox" checked={contact.enabled} onChange={(e) => setContact({ ...contact, enabled: e.target.checked })} /> Enabled</label><label className="checkline"><input type="checkbox" checked={contact.verified} onChange={(e) => setContact({ ...contact, verified: e.target.checked })} /> Verified</label></span><button className="primary compact" onClick={saveContact}><Save className="size-4" /> Save contact</button></div></Inspector>;
+function ContactEditor({ contact, users, setContact, saveContact }: { contact: Contact; users: SiloUser[]; setContact: (c: Contact) => void; saveContact: () => void }) {
+  return <Inspector title={contact.id ? "Edit Contact" : "Create Contact"} icon={<Users />}><div className="editor-grid"><label className="field"><span>User</span><div className="target-list">{users.length === 0 ? <div className="target-empty">No Silo users available.</div> : users.map((u) => <label key={u.id} className="target-option"><input type="radio" checked={contact.user_id === String(u.id)} onChange={() => setContact({ ...contact, user_id: String(u.id), value: contact.kind === "email" ? u.email : contact.value, label: contact.label || u.username })} /><span>{u.username || u.email}</span><code>{u.email}</code></label>)}</div></label><div className="editor-grid"><Input label="Kind" value={contact.kind} onChange={(kind) => setContact({ ...contact, kind })} /><Input label="Value" value={contact.value} onChange={(value) => setContact({ ...contact, value })} /><Input label="Label" value={contact.label} onChange={(label) => setContact({ ...contact, label })} /></div></div><div className="editor-actions"><span className="option-grid"><label className="checkline"><input type="checkbox" checked={contact.enabled} onChange={(e) => setContact({ ...contact, enabled: e.target.checked })} /> Enabled</label><label className="checkline"><input type="checkbox" checked={contact.verified} onChange={(e) => setContact({ ...contact, verified: e.target.checked })} /> Verified</label></span><button className="primary compact" onClick={saveContact}><Save className="size-4" /> Save contact</button></div></Inspector>;
 }
 
 function providerDefaults(provider?: Provider): Record<string, string> {
@@ -361,7 +361,7 @@ function ProviderSummary({ provider }: { provider?: Provider }) {
   );
 }
 
-function FieldSectionPanel({ title, description, fields, providerID, users, target, setTarget }: { title: string; description: string; fields: ProviderField[]; providerID: string; users: ContinuumUser[]; target: Target; setTarget: (t: Target) => void }) {
+function FieldSectionPanel({ title, description, fields, providerID, users, target, setTarget }: { title: string; description: string; fields: ProviderField[]; providerID: string; users: SiloUser[]; target: Target; setTarget: (t: Target) => void }) {
   return (
     <section className="setup-section">
       <div className="setup-section-head">
@@ -498,7 +498,7 @@ function Input({ label, value, onChange, type = "text" }: { label: string; value
   return <label className="field">{label}<input className="input" type={type} value={value} onChange={(e) => onChange(e.target.value)} /></label>;
 }
 
-function FieldInput({ field, providerID, users, value, onChange }: { field: ProviderField; providerID: string; users: ContinuumUser[]; value: string; onChange: (v: string) => void }) {
+function FieldInput({ field, providerID, users, value, onChange }: { field: ProviderField; providerID: string; users: SiloUser[]; value: string; onChange: (v: string) => void }) {
   const displayValue = value || field.default || "";
   const label = <span>{field.label}{field.required && <b className="required-dot">*</b>}</span>;
   const wide = fieldSection(field, providerID) === "destination" || fieldSection(field, providerID) === "auth";
@@ -527,7 +527,7 @@ function isTruthy(value: string) {
   return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
-function EmailRecipientField({ label, field, users, value, onChange }: { label: ReactNode; field: ProviderField; users: ContinuumUser[]; value: string; onChange: (v: string) => void }) {
+function EmailRecipientField({ label, field, users, value, onChange }: { label: ReactNode; field: ProviderField; users: SiloUser[]; value: string; onChange: (v: string) => void }) {
   const emails = splitRecipients(value);
   const selected = new Set(emails.map((email) => email.toLowerCase()));
   const userEmails = users.map((user) => user.email.toLowerCase());
@@ -547,7 +547,7 @@ function EmailRecipientField({ label, field, users, value, onChange }: { label: 
     const picked = users.filter((user) => selected.has(user.email.toLowerCase())).map((user) => user.email);
     onChange([...picked, ...splitRecipients(manualValue)].join(", "));
   };
-  return <label className="field email-recipient-field">{label}<div className="user-email-list">{users.length === 0 ? <div className="target-empty">No Continuum users with email addresses are available.</div> : users.map((user) => <span key={user.id} className="user-email-option"><input type="checkbox" checked={selected.has(user.email.toLowerCase())} onChange={() => toggle(user.email)} /><span><strong>{user.username || user.email}</strong><code>{user.email}</code></span></span>)}</div><input className="input" value={manual} placeholder="Additional email addresses" onChange={(e) => setManual(e.target.value)} />{field.help && <small>{field.help}</small>}</label>;
+  return <label className="field email-recipient-field">{label}<div className="user-email-list">{users.length === 0 ? <div className="target-empty">No Silo users with email addresses are available.</div> : users.map((user) => <span key={user.id} className="user-email-option"><input type="checkbox" checked={selected.has(user.email.toLowerCase())} onChange={() => toggle(user.email)} /><span><strong>{user.username || user.email}</strong><code>{user.email}</code></span></span>)}</div><input className="input" value={manual} placeholder="Additional email addresses" onChange={(e) => setManual(e.target.value)} />{field.help && <small>{field.help}</small>}</label>;
 }
 
 function splitRecipients(raw: string) {

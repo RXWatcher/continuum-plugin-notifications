@@ -14,26 +14,26 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	pluginv1 "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginproto/continuum/plugin/v1"
+	pluginv1 "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
 	publicmanifest "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginsdk/manifest"
 	sdkruntime "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginsdk/runtime"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/consumer"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/httproutes"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/migrate"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/notify"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/poll"
-	pluginrt "github.com/RXWatcher/continuum-plugin-notifications/internal/runtime"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/server"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
-	"github.com/RXWatcher/continuum-plugin-notifications/web"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/consumer"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/httproutes"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/migrate"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/notify"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/poll"
+	pluginrt "github.com/RXWatcher/silo-plugin-notifications/internal/runtime"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/server"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/web"
 )
 
 //go:embed manifest.json
 var manifestRaw []byte
 
 func main() {
-	logger := hclog.New(&hclog.LoggerOptions{Name: "continuum-plugin-notifications"})
+	logger := hclog.New(&hclog.LoggerOptions{Name: "silo-plugin-notifications"})
 	manifest, err := loadManifest()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "load manifest: %v\n", err)

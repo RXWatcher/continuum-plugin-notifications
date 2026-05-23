@@ -2,7 +2,7 @@ INSERT INTO rules (name, event_pattern, target_ids, enabled, title, body)
 VALUES
   (
     'Requests: approval decisions',
-    'plugin.continuum.requests.*',
+    'plugin.silo.requests.*',
     '{}'::text[],
     FALSE,
     'Request event',
@@ -10,7 +10,7 @@ VALUES
   ),
   (
     'Audiobooks: request status',
-    'plugin.continuum.bookwarehouse-audio.request_*',
+    'plugin.silo.bookwarehouse-audio.request_*',
     '{}'::text[],
     FALSE,
     'Audiobook request update',
@@ -18,7 +18,7 @@ VALUES
   ),
   (
     'Ebooks: BookWarehouse request status',
-    'plugin.continuum.bookwarehouse-ebook.request_*',
+    'plugin.silo.bookwarehouse-ebook.request_*',
     '{}'::text[],
     FALSE,
     'Ebook request update',
@@ -26,7 +26,7 @@ VALUES
   ),
   (
     'Ebooks: EbookDB request status',
-    'plugin.continuum.ebookdb.request_*',
+    'plugin.silo.ebookdb.request_*',
     '{}'::text[],
     FALSE,
     'Ebook request update',

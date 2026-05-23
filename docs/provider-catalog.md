@@ -70,8 +70,8 @@ Failures are surfaced as `last_error` on the delivery row. The text is whatever 
 
 ```json
 {
-  "event_name": "plugin.continuum.notifications.test",
-  "title": "Continuum test notification",
+  "event_name": "plugin.silo.notifications.test",
+  "title": "Silo test notification",
   "body": "This test was sent from the Notifications admin UI.",
   "payload": {"test": true}
 }

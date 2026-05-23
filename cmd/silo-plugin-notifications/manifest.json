@@ -1,0 +1,133 @@
+{
+  "plugin_id": "silo.notifications",
+  "version": "1.0.3",
+  "checksum": "__CHECKSUM__",
+  "silo_api_version": "v1",
+  "category": "Operations",
+  "supported_platforms": [
+    {
+      "os": "linux",
+      "arch": "amd64"
+    }
+  ],
+  "capabilities": [
+    {
+      "type": "event_consumer.v1",
+      "id": "notification-events",
+      "display_name": "Notification events",
+      "description": "Receives Silo and plugin events, applies rules, and queues outbound notifications.",
+      "subscriptions": [
+        "silo.notifications.send",
+        "notifications.send",
+        "library.media_added",
+        "plugin.silo.requests.submitted",
+        "plugin.silo.requests.approved",
+        "plugin.silo.requests.denied",
+        "plugin.silo.requests.cancelled",
+        "plugin.silo.requests.fulfilled",
+        "plugin.silo.arrproxy.submitted",
+        "plugin.silo.arrproxy.downloading",
+        "plugin.silo.arrproxy.imported",
+        "plugin.silo.arrproxy.failed",
+        "plugin.silo.arrproxy.cancelled",
+        "plugin.silo.arrproxy.unrouted",
+        "plugin.silo.arrouter.submitted",
+        "plugin.silo.arrouter.downloading",
+        "plugin.silo.arrouter.imported",
+        "plugin.silo.arrouter.failed",
+        "plugin.silo.arrouter.cancelled",
+        "plugin.silo.arrouter.unrouted",
+        "plugin.silo.arr-router.submitted",
+        "plugin.silo.arr-router.downloading",
+        "plugin.silo.arr-router.imported",
+        "plugin.silo.arr-router.failed",
+        "plugin.silo.audiobooks.request_submitted",
+        "plugin.silo.ebooks.request_submitted",
+        "plugin.silo.bookwarehouse-audio.request_acknowledged",
+        "plugin.silo.bookwarehouse-audio.request_status_changed",
+        "plugin.silo.bookwarehouse-audio.request_fulfilled",
+        "plugin.silo.bookwarehouse-audio.request_failed",
+        "plugin.silo.bookwarehouse-ebook.request_acknowledged",
+        "plugin.silo.bookwarehouse-ebook.request_status_changed",
+        "plugin.silo.bookwarehouse-ebook.request_fulfilled",
+        "plugin.silo.bookwarehouse-ebook.request_failed",
+        "plugin.silo.ebook-requests.request_acknowledged",
+        "plugin.silo.ebook-requests.request_status_changed",
+        "plugin.silo.ebook-requests.request_fulfilled",
+        "plugin.silo.ebook-requests.request_failed",
+        "plugin.silo.ebookdb.request_acknowledged",
+        "plugin.silo.ebookdb.request_status_changed",
+        "plugin.silo.ebookdb.request_fulfilled",
+        "plugin.silo.ebookdb.request_failed",
+        "plugin.*"
+      ]
+    },
+    {
+      "type": "scheduled_task.v1",
+      "id": "retry-notifications",
+      "display_name": "Retry notifications",
+      "description": "Retries queued or failed notification deliveries."
+    },
+    {
+      "type": "http_routes.v1",
+      "id": "admin",
+      "display_name": "Notifications admin",
+      "description": "Admin UI for targets, rules, provider settings, delivery audit, retries, and test sends."
+    }
+  ],
+  "http_routes": [
+    {
+      "id": "api",
+      "method": "*",
+      "path": "/api/admin/*",
+      "access": "admin"
+    },
+    {
+      "id": "service_send",
+      "method": "*",
+      "path": "/api/v1/send",
+      "access": "admin"
+    },
+    {
+      "id": "service_api",
+      "method": "*",
+      "path": "/api/v1/*",
+      "access": "authenticated"
+    },
+    {
+      "id": "assets",
+      "method": "GET",
+      "path": "/assets/*",
+      "access": "public"
+    },
+    {
+      "id": "spa",
+      "method": "GET",
+      "path": "/admin/*",
+      "access": "admin",
+      "navigable": true,
+      "navigation_label": "Notifications",
+      "navigation_kind": "admin"
+    }
+  ],
+  "global_config_schema": [
+    {
+      "key": "connection",
+      "title": "Notifications connection",
+      "description": "Postgres DSN for the dedicated notifications schema.",
+      "json_schema": "{\"type\":\"object\",\"properties\":{\"database_url\":{\"type\":\"string\"}},\"required\":[\"database_url\"]}",
+      "required": true,
+      "admin_form": {
+        "submit_label": "Save",
+        "fields": [
+          {
+            "key": "database_url",
+            "label": "Postgres connection URL",
+            "control": "ADMIN_FORM_CONTROL_TEXT",
+            "required": true
+          }
+        ]
+      }
+    }
+  ]
+}

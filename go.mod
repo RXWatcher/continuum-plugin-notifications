@@ -1,4 +1,4 @@
-module github.com/RXWatcher/continuum-plugin-notifications
+module github.com/RXWatcher/silo-plugin-notifications
 
 go 1.26.0
 

@@ -12,7 +12,7 @@ Both share the same payload shape and most of the same resolution logic. The HTT
 The consumer recognises:
 
 - `notifications.send`
-- `plugin.continuum.notifications.send`
+- `plugin.silo.notifications.send`
 - Anything ending in `.notifications.send`
 - Anything ending in `.notification.send` (singular)
 
@@ -31,7 +31,7 @@ Any other event name is treated as a regular event and runs through the rules en
   "idempotency_key": "request-1234-fulfilled",
   "title": "...",                 // required for HTTP; defaulted for event
   "body": "...",
-  "event_name": "plugin.foo.bar", // optional; defaults to plugin.continuum.notifications.direct
+  "event_name": "plugin.foo.bar", // optional; defaults to plugin.silo.notifications.direct
   "payload": { "anything": "here" },
   "attachments": [ { "filename": "x.pdf", "content_type": "application/pdf", "data_base64": "..." } ],
   "send_now": false               // HTTP only; bypasses queue when true

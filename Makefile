@@ -1,11 +1,11 @@
-BINARY := continuum-plugin-notifications
+BINARY := silo-plugin-notifications
 GO ?= go
 PNPM ?= pnpm
 
 .PHONY: build web test clean
 
 build: web
-	$(GO) build -o $(BINARY) ./cmd/continuum-plugin-notifications
+	$(GO) build -o $(BINARY) ./cmd/silo-plugin-notifications
 
 # Build the SPA so web/embed.go has dist/ to embed. Re-runs idempotently;
 # vite skips work if nothing changed.

@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
 )
 
 type Message struct {
@@ -165,7 +165,7 @@ func providerCapabilities(id string) Capabilities {
 
 func coreProviders() []Provider {
 	return []Provider{
-		funcProvider{id: "webhook", name: "Generic webhook", fields: []Field{{Key: "url", Label: "Webhook URL", Control: "url", Placeholder: "https://example.com/webhook", Help: "Continuum will POST notification JSON to this URL.", Required: true}, {Key: "authorization", Label: "Authorization header", Placeholder: "Bearer ...", Help: "Optional value sent as the Authorization header.", Secret: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+		funcProvider{id: "webhook", name: "Generic webhook", fields: []Field{{Key: "url", Label: "Webhook URL", Control: "url", Placeholder: "https://example.com/webhook", Help: "Silo will POST notification JSON to this URL.", Required: true}, {Key: "authorization", Label: "Authorization header", Placeholder: "Bearer ...", Help: "Optional value sent as the Authorization header.", Secret: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
 			return postJSON(ctx, val(t, "url"), map[string]string{"Authorization": val(t, "authorization")}, m)
 		}},
 		funcProvider{id: "discord", name: "Discord webhook", fields: []Field{{Key: "webhook_url", Label: "Webhook URL", Secret: true, Required: true}, {Key: "username", Label: "Username"}}, send: func(ctx context.Context, t store.Target, m Message) error {
@@ -274,7 +274,7 @@ func enrichField(f Field) Field {
 	case "topic":
 		f.Placeholder = firstNonEmpty(f.Placeholder, "alerts")
 	case "client_id":
-		f.Placeholder = firstNonEmpty(f.Placeholder, "continuum-notifications")
+		f.Placeholder = firstNonEmpty(f.Placeholder, "silo-notifications")
 	}
 	return f
 }

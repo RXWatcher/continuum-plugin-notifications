@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/hashicorp/go-hclog"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/auth"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/notify"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/auth"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/notify"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
 )
 
 func errString(msg string) error { return errors.New(msg) }
@@ -195,7 +195,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 	}
 	eventName := req.EventName
 	if eventName == "" {
-		eventName = "plugin.continuum.notifications.direct"
+		eventName = "plugin.silo.notifications.direct"
 	}
 	payload := req.Payload
 	if payload == nil {
@@ -390,7 +390,7 @@ func (s *Server) handleTestTarget(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	msg := notify.Message{EventName: "plugin.continuum.notifications.test", Title: "Continuum test notification", Body: "This test was sent from the Notifications admin UI.", Payload: map[string]any{"test": true}}
+	msg := notify.Message{EventName: "plugin.silo.notifications.test", Title: "Silo test notification", Body: "This test was sent from the Notifications admin UI.", Payload: map[string]any{"test": true}}
 	if err := s.registry().Send(r.Context(), t, msg); err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
 		return

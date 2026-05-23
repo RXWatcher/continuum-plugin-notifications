@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
 )
 
 func smsGatewayProviders() []Provider {

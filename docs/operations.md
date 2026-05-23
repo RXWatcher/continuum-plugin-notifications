@@ -12,7 +12,7 @@ This document covers day-to-day workflows. For deeper topics see:
 
 ## Admin UI map
 
-The SPA mounts at `/admin/*` behind admin auth. The same backend services `/api/admin/*` (admin-only JSON) and `/api/v1/*` (authenticated read; `POST /api/v1/send` is admin-gated). Routes are declared in `cmd/continuum-plugin-notifications/manifest.json`.
+The SPA mounts at `/admin/*` behind admin auth. The same backend services `/api/admin/*` (admin-only JSON) and `/api/v1/*` (authenticated read; `POST /api/v1/send` is admin-gated). Routes are declared in `cmd/silo-plugin-notifications/manifest.json`.
 
 | Section | What it manages | Backing endpoint |
 | --- | --- | --- |
@@ -37,7 +37,7 @@ Disable a target instead of deleting it if rules still reference it — deletion
 
 ## Rule lifecycle
 
-1. Pick an `event_pattern`. Use exact match for one event, a trailing-`*` prefix for a family (e.g. `plugin.continuum.requests.*`), or `*` to catch every subscribed event.
+1. Pick an `event_pattern`. Use exact match for one event, a trailing-`*` prefix for a family (e.g. `plugin.silo.requests.*`), or `*` to catch every subscribed event.
 2. Add the target IDs that should receive deliveries when the rule matches.
 3. Optional: customise `title` and `body` templates. Defaults are `{{event}}` and `{{summary}}`. Available placeholders: `{{event}}`, `{{summary}}`, and any top-level key in the event payload. See [rule-matching.md](rule-matching.md).
 4. Toggle `enabled`. Disabled rules are skipped by the consumer.

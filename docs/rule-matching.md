@@ -8,21 +8,21 @@ The matcher lives in [`internal/notify/template.go`](../internal/notify/template
 
 | Pattern form | Behaviour | Example |
 | --- | --- | --- |
-| `"*"` | Matches every event. | `*` matches `library.media_added` and `plugin.continuum.requests.submitted`. |
+| `"*"` | Matches every event. | `*` matches `library.media_added` and `plugin.silo.requests.submitted`. |
 | Exact string | Matches when `pattern == event`. | `library.media_added` only matches `library.media_added`. |
-| Trailing `*` | Matches when `event` has `strings.TrimSuffix(pattern, "*")` as a prefix. | `plugin.continuum.requests.*` matches `plugin.continuum.requests.submitted` and `plugin.continuum.requests.fulfilled` but **not** `plugin.continuum.requests` (no trailing dot in the event). |
+| Trailing `*` | Matches when `event` has `strings.TrimSuffix(pattern, "*")` as a prefix. | `plugin.silo.requests.*` matches `plugin.silo.requests.submitted` and `plugin.silo.requests.fulfilled` but **not** `plugin.silo.requests` (no trailing dot in the event). |
 
 There is **no** mid-string `*`, no `?`, and no character class. `plugin.*.requests.submitted` is treated as an exact string and will not match anything in practice.
 
 ## Event names the consumer sees
 
-The host only routes events whose names appear in the subscription list in `manifest.json`. The list is broad and ends in `plugin.*`, so any future `plugin.<vendor>.<plugin>.<event>` flows through without redeploying. Host events (`library.*`, `continuum.*`) only arrive if explicitly listed.
+The host only routes events whose names appear in the subscription list in `manifest.json`. The list is broad and ends in `plugin.*`, so any future `plugin.<vendor>.<plugin>.<event>` flows through without redeploying. Host events (`library.*`, `silo.*`) only arrive if explicitly listed.
 
 A rule pattern of `*` is therefore effectively "every event the manifest subscribes to". If you need to subscribe to a new host event, add it to the manifest — the rule alone is not enough.
 
 ## Direct sends bypass matching
 
-Events named `notifications.send`, `plugin.continuum.notifications.send`, or anything ending in `.notifications.send` / `.notification.send` are routed straight to `handleDirectSend` and never consult the rules table. See [direct-send.md](direct-send.md).
+Events named `notifications.send`, `plugin.silo.notifications.send`, or anything ending in `.notifications.send` / `.notification.send` are routed straight to `handleDirectSend` and never consult the rules table. See [direct-send.md](direct-send.md).
 
 ## Template expansion
 

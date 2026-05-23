@@ -18,12 +18,12 @@ If the row exists you are debugging delivery. If it does not, you are debugging 
 
 Walk the path the consumer takes:
 
-1. **Is Notifications consuming the event?** Confirm the event name appears in `cmd/continuum-plugin-notifications/manifest.json` under `subscriptions`, or matches the `plugin.*` catch-all. Host events (`library.*`, `continuum.*`) must be enumerated explicitly.
-2. **Did the publisher actually emit?** Check the publishing plugin's logs. If Notifications is only one of several subscribers, the host log will show fan-out. A misspelled event name is a common cause — `plugin.continuum.requests.fulfilled` (correct) vs `plugin.continuum.request.fulfilled` (silently dropped).
+1. **Is Notifications consuming the event?** Confirm the event name appears in `cmd/silo-plugin-notifications/manifest.json` under `subscriptions`, or matches the `plugin.*` catch-all. Host events (`library.*`, `silo.*`) must be enumerated explicitly.
+2. **Did the publisher actually emit?** Check the publishing plugin's logs. If Notifications is only one of several subscribers, the host log will show fan-out. A misspelled event name is a common cause — `plugin.silo.requests.fulfilled` (correct) vs `plugin.silo.request.fulfilled` (silently dropped).
 3. **Does a rule match?** Pull rules and test the matcher mentally:
    - `*` matches anything subscribed.
    - Exact match — case-sensitive, no trimming.
-   - Trailing-`*` — `plugin.continuum.requests.*` matches `plugin.continuum.requests.submitted`; it does not match `plugin.continuum.requests` (missing dot).
+   - Trailing-`*` — `plugin.silo.requests.*` matches `plugin.silo.requests.submitted`; it does not match `plugin.silo.requests` (missing dot).
    - No mid-string globs. `plugin.*.requests.*` matches nothing.
 4. **Is the rule `enabled`?** Disabled rules are skipped silently.
 5. **Are the target IDs still valid and enabled?** Deleted or disabled targets produce no row.

@@ -8,9 +8,9 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/notify"
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
-	pluginv1 "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginproto/continuum/plugin/v1"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/notify"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
+	pluginv1 "github.com/ContinuumApp/continuum-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
 )
 
 type Deps struct {
@@ -83,7 +83,7 @@ func (c *Consumer) HandleEvent(ctx context.Context, req *pluginv1.HandleEventReq
 
 func isDirectSendEvent(event string) bool {
 	return event == "notifications.send" ||
-		event == "plugin.continuum.notifications.send" ||
+		event == "plugin.silo.notifications.send" ||
 		strings.HasSuffix(event, ".notifications.send") ||
 		strings.HasSuffix(event, ".notification.send")
 }
@@ -115,10 +115,10 @@ func handleDirectSend(ctx context.Context, s *store.Store, payload map[string]an
 		return err
 	}
 	if req.Title == "" {
-		req.Title = "Continuum notification"
+		req.Title = "Silo notification"
 	}
 	if req.EventName == "" {
-		req.EventName = "plugin.continuum.notifications.direct"
+		req.EventName = "plugin.silo.notifications.direct"
 	}
 	if req.Payload == nil {
 		req.Payload = map[string]any{}

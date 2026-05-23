@@ -1,6 +1,6 @@
-# Notifications for Continuum
+# Notifications for Silo
 
-`continuum.notifications` is Continuum's notification hub. It receives host and plugin events, matches them against operator-defined rules, queues outbound deliveries across a wide provider catalog, and retries transient failures while keeping a delivery audit trail.
+`silo.notifications` is Silo's notification hub. It receives host and plugin events, matches them against operator-defined rules, queues outbound deliveries across a wide provider catalog, and retries transient failures while keeping a delivery audit trail.
 
 The plugin is passive. Other plugins publish their normal events whether or not Notifications is installed; if it is absent, those workflows continue unchanged and no notification subscriber receives the events.
 
@@ -12,7 +12,7 @@ Lives under **Operations**.
 
 | Type | ID | Purpose |
 | --- | --- | --- |
-| `event_consumer.v1` | `notification-events` | Receives Continuum and plugin events, applies rules, and queues outbound notifications. |
+| `event_consumer.v1` | `notification-events` | Receives Silo and plugin events, applies rules, and queues outbound notifications. |
 | `scheduled_task.v1` | `retry-notifications` | Drives the delivery queue: sends due notifications and retries transient failures. |
 | `http_routes.v1` | `admin` | Admin SPA and JSON API for providers, targets, rules, delivery audit, retries, and test sends. |
 
@@ -20,7 +20,7 @@ Lives under **Operations**.
 
 Passive cross-plugin consumer. The plugin subscribes to a broad set of host and plugin events, but no other plugin depends on it. In that sense it is standalone: removing Notifications does not break any publisher.
 
-Host: [`ContinuumApp/continuum`](https://github.com/ContinuumApp/continuum). SDK: [`ContinuumApp/continuum-plugin-sdk`](https://github.com/ContinuumApp/continuum-plugin-sdk).
+Host: [`ContinuumApp/silo`](https://github.com/ContinuumApp/silo). SDK: [`ContinuumApp/continuum-plugin-sdk`](https://github.com/ContinuumApp/continuum-plugin-sdk).
 
 ## External services
 
@@ -54,21 +54,21 @@ The admin UI exposes a test-send action so operators can validate provider crede
 The consumer subscribes to a wide list of host and plugin event names, including a broad `plugin.*` catch-all so newly installed plugins start flowing through rules without redeploying Notifications:
 
 ```text
-continuum.notifications.send
+silo.notifications.send
 notifications.send
 library.media_added
-plugin.continuum.requests.{submitted,approved,denied,cancelled,fulfilled}
-plugin.continuum.arrproxy.{submitted,downloading,imported,failed,cancelled,unrouted}
-plugin.continuum.arrouter.{submitted,downloading,imported,failed,cancelled,unrouted}
-plugin.continuum.audiobooks.request_submitted
-plugin.continuum.ebooks.request_submitted
-plugin.continuum.bookwarehouse-audio.{request_acknowledged,request_status_changed,request_fulfilled,request_failed}
-plugin.continuum.bookwarehouse-ebook.{request_acknowledged,request_status_changed,request_fulfilled,request_failed}
-plugin.continuum.ebook-requests.{request_acknowledged,request_status_changed,request_fulfilled,request_failed}
+plugin.silo.requests.{submitted,approved,denied,cancelled,fulfilled}
+plugin.silo.arrproxy.{submitted,downloading,imported,failed,cancelled,unrouted}
+plugin.silo.arrouter.{submitted,downloading,imported,failed,cancelled,unrouted}
+plugin.silo.audiobooks.request_submitted
+plugin.silo.ebooks.request_submitted
+plugin.silo.bookwarehouse-audio.{request_acknowledged,request_status_changed,request_fulfilled,request_failed}
+plugin.silo.bookwarehouse-ebook.{request_acknowledged,request_status_changed,request_fulfilled,request_failed}
+plugin.silo.ebook-requests.{request_acknowledged,request_status_changed,request_fulfilled,request_failed}
 plugin.*
 ```
 
-See `cmd/continuum-plugin-notifications/manifest.json` for the canonical, fully-expanded list.
+See `cmd/silo-plugin-notifications/manifest.json` for the canonical, fully-expanded list.
 
 ## Configuration
 
@@ -81,7 +81,7 @@ Runtime settings — provider credentials, targets, rules, user contacts and pre
 Example DSN:
 
 ```text
-postgres://plugin_notifications:password@postgres:5432/continuum?search_path=notifications&sslmode=disable
+postgres://plugin_notifications:password@postgres:5432/silo?search_path=notifications&sslmode=disable
 ```
 
 Database setup:
@@ -89,7 +89,7 @@ Database setup:
 ```sql
 CREATE ROLE plugin_notifications WITH LOGIN PASSWORD '<chosen>';
 CREATE SCHEMA notifications AUTHORIZATION plugin_notifications;
-GRANT CONNECT ON DATABASE continuum TO plugin_notifications;
+GRANT CONNECT ON DATABASE silo TO plugin_notifications;
 ```
 
 ## Detailed docs
@@ -108,4 +108,4 @@ make build
 make test
 ```
 
-CI builds linux-amd64 binaries on push to main via the reusable workflow in [RXWatcher/continuum-plugin-repository](https://github.com/RXWatcher/continuum-plugin-repository) and publishes them to the catalog at [`./binaries/`](https://github.com/RXWatcher/continuum-plugin-repository/tree/main/binaries).
+CI builds linux-amd64 binaries on push to main via the reusable workflow in [RXWatcher/silo-plugin-repository](https://github.com/RXWatcher/silo-plugin-repository) and publishes them to the catalog at [`./binaries/`](https://github.com/RXWatcher/silo-plugin-repository/tree/main/binaries).

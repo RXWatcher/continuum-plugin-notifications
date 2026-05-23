@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
 )
 
 type funcProvider struct {
@@ -86,7 +86,7 @@ func jsonTextProvider(id, name, urlKey, bodyKey string) Provider {
 }
 
 func formTextProvider(id, name string) Provider {
-	return funcProvider{id: id, name: name, fields: []Field{{Key: "url", Label: "Webhook URL", Control: "url", Placeholder: "https://example.com/webhook", Help: "Continuum will POST form-encoded notification data to this URL.", Required: true}, {Key: "authorization", Label: "Authorization header", Placeholder: "Bearer ...", Help: "Optional value sent as the Authorization header.", Secret: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
+	return funcProvider{id: id, name: name, fields: []Field{{Key: "url", Label: "Webhook URL", Control: "url", Placeholder: "https://example.com/webhook", Help: "Silo will POST form-encoded notification data to this URL.", Required: true}, {Key: "authorization", Label: "Authorization header", Placeholder: "Bearer ...", Help: "Optional value sent as the Authorization header.", Secret: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
 		v := url.Values{"title": {m.Title}, "body": {m.Body}, "message": {m.Title + "\n\n" + m.Body}}
 		return postForm(ctx, val(t, "url"), map[string]string{"Authorization": val(t, "authorization")}, v)
 	}}
@@ -220,7 +220,7 @@ func plivoProvider() Provider {
 func clicksendProvider() Provider {
 	return funcProvider{id: "clicksend", name: "ClickSend SMS", fields: smsFields("Username", "API key"), send: func(ctx context.Context, t store.Target, m Message) error {
 		auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(val(t, "account")+":"+val(t, "token")))
-		msg := map[string]any{"source": "continuum", "from": val(t, "from"), "to": val(t, "to"), "body": m.Title + "\n" + m.Body}
+		msg := map[string]any{"source": "silo", "from": val(t, "from"), "to": val(t, "to"), "body": m.Title + "\n" + m.Body}
 		return postJSON(ctx, "https://rest.clicksend.com/v3/sms/send", map[string]string{"Authorization": auth}, map[string]any{"messages": []any{msg}})
 	}}
 }
@@ -255,7 +255,7 @@ func oneSignalProvider() Provider {
 
 func opsgenieProvider() Provider {
 	return funcProvider{id: "opsgenie", name: "Opsgenie", fields: []Field{{Key: "api_key", Label: "API key", Secret: true, Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
-		return postJSON(ctx, "https://api.opsgenie.com/v2/alerts", map[string]string{"Authorization": "GenieKey " + val(t, "api_key")}, map[string]any{"message": m.Title, "description": m.Body, "source": "continuum"})
+		return postJSON(ctx, "https://api.opsgenie.com/v2/alerts", map[string]string{"Authorization": "GenieKey " + val(t, "api_key")}, map[string]any{"message": m.Title, "description": m.Body, "source": "silo"})
 	}}
 }
 
@@ -265,7 +265,7 @@ func pagerDutyProvider() Provider {
 		if sev == "" {
 			sev = "info"
 		}
-		return postJSON(ctx, "https://events.pagerduty.com/v2/enqueue", nil, map[string]any{"routing_key": val(t, "routing_key"), "event_action": "trigger", "payload": map[string]any{"summary": m.Title, "source": "continuum", "severity": sev, "custom_details": m.Body}})
+		return postJSON(ctx, "https://events.pagerduty.com/v2/enqueue", nil, map[string]any{"routing_key": val(t, "routing_key"), "event_action": "trigger", "payload": map[string]any{"summary": m.Title, "source": "silo", "severity": sev, "custom_details": m.Body}})
 	}}
 }
 

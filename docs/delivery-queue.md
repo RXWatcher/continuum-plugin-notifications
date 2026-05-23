@@ -25,7 +25,7 @@ The check constraint on `deliveries.status` only allows these three.
    - Calls `Registry.Send(ctx, target, msg)`. The registry wraps `ctx` in `context.WithTimeout(timeout)` from `NewRegistry` (set to `app_config.timeout_ms` at plugin startup).
    - Success -> `MarkDelivered`. Failure -> `MarkFailed(retry = attempts+1 < max_attempts)`.
 
-The scheduled task interval is driven by the Continuum host based on the manifest's `scheduled_task.v1` declaration. Out-of-band ticks are triggered manually via `POST /api/admin/deliveries/run`.
+The scheduled task interval is driven by the Silo host based on the manifest's `scheduled_task.v1` declaration. Out-of-band ticks are triggered manually via `POST /api/admin/deliveries/run`.
 
 ## Retry policy
 

@@ -1,5 +1,5 @@
 {
-  "name": "continuum-plugin-notifications-web",
+  "name": "silo-plugin-notifications-web",
   "private": true,
   "version": "0.1.0",
   "type": "module",

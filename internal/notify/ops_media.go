@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
 )
 
 func opsMediaProviders() []Provider {
@@ -33,7 +33,7 @@ func opsMediaProviders() []Provider {
 
 func signl4Provider() Provider {
 	return funcProvider{id: "signl4", name: "SIGNL4", fields: commonWebhookFields("webhook_url"), send: func(ctx context.Context, t store.Target, m Message) error {
-		return postJSON(ctx, val(t, "webhook_url"), nil, map[string]any{"Title": m.Title, "Message": m.Body, "Source": "Continuum"})
+		return postJSON(ctx, val(t, "webhook_url"), nil, map[string]any{"Title": m.Title, "Message": m.Body, "Source": "Silo"})
 	}}
 }
 
@@ -45,7 +45,7 @@ func pagerTreeProvider() Provider {
 
 func splunkProvider() Provider {
 	return funcProvider{id: "splunk", name: "Splunk HEC", fields: []Field{{Key: "hec_url", Label: "HEC URL", Required: true}, {Key: "token", Label: "Token", Secret: true, Required: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
-		return postJSON(ctx, val(t, "hec_url"), map[string]string{"Authorization": "Splunk " + val(t, "token")}, map[string]any{"event": map[string]any{"title": m.Title, "body": m.Body, "event": m.EventName, "payload": m.Payload}, "source": "continuum"})
+		return postJSON(ctx, val(t, "hec_url"), map[string]string{"Authorization": "Splunk " + val(t, "token")}, map[string]any{"event": map[string]any{"title": m.Title, "body": m.Body, "event": m.EventName, "payload": m.Payload}, "source": "silo"})
 	}}
 }
 
@@ -114,7 +114,7 @@ func kodiProvider(id, name string) Provider {
 		if val(t, "username") != "" {
 			headers["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(val(t, "username")+":"+val(t, "password")))
 		}
-		return postJSON(ctx, val(t, "url"), headers, map[string]any{"jsonrpc": "2.0", "method": "GUI.ShowNotification", "params": map[string]any{"title": m.Title, "message": m.Body}, "id": "continuum"})
+		return postJSON(ctx, val(t, "url"), headers, map[string]any{"jsonrpc": "2.0", "method": "GUI.ShowNotification", "params": map[string]any{"title": m.Title, "message": m.Body}, "id": "silo"})
 	}}
 }
 
@@ -126,7 +126,7 @@ func syslogProvider(id, name, network string) Provider {
 			return err
 		}
 		defer c.Close()
-		_, err = c.Write([]byte("<14>continuum-notifications: " + m.Title + " " + strings.ReplaceAll(m.Body, "\n", " ") + "\n"))
+		_, err = c.Write([]byte("<14>silo-notifications: " + m.Title + " " + strings.ReplaceAll(m.Body, "\n", " ") + "\n"))
 		return err
 	}}
 }

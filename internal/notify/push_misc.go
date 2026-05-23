@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
 )
 
 func remainingPushProviders() []Provider {
@@ -55,7 +55,7 @@ func prowlProvider() Provider {
 		if pri == "" {
 			pri = "0"
 		}
-		return postForm(ctx, "https://api.prowlapp.com/publicapi/add", nil, url.Values{"apikey": {val(t, "api_key")}, "application": {"Continuum"}, "event": {m.Title}, "description": {m.Body}, "priority": {pri}})
+		return postForm(ctx, "https://api.prowlapp.com/publicapi/add", nil, url.Values{"apikey": {val(t, "api_key")}, "application": {"Silo"}, "event": {m.Title}, "description": {m.Body}, "priority": {pri}})
 	}}
 }
 

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RXWatcher/continuum-plugin-notifications/internal/store"
+	"github.com/RXWatcher/silo-plugin-notifications/internal/store"
 )
 
 func finalParityProviders() []Provider {
@@ -92,7 +92,7 @@ func fluxerProvider() Provider {
 
 func growlProvider() Provider {
 	return funcProvider{id: "growl", name: "Growl GNTP", fields: []Field{{Key: "address", Label: "Address host:port", Required: true}, {Key: "password", Label: "Password", Secret: true}}, send: func(ctx context.Context, t store.Target, m Message) error {
-		line := "GNTP/1.0 NOTIFY NONE\r\nApplication-Name: Continuum\r\nNotification-Name: Continuum\r\nNotification-Title: " + m.Title + "\r\nNotification-Text: " + strings.ReplaceAll(m.Body, "\n", " ") + "\r\n\r\n"
+		line := "GNTP/1.0 NOTIFY NONE\r\nApplication-Name: Silo\r\nNotification-Name: Silo\r\nNotification-Title: " + m.Title + "\r\nNotification-Text: " + strings.ReplaceAll(m.Body, "\n", " ") + "\r\n\r\n"
 		return tcpLine(ctx, val(t, "address"), line)
 	}}
 }
@@ -101,7 +101,7 @@ func mqttProvider() Provider {
 	return funcProvider{id: "mqtt", name: "MQTT", fields: []Field{{Key: "address", Label: "Broker host:port", Required: true}, {Key: "topic", Label: "Topic", Required: true}, {Key: "client_id", Label: "Client ID"}}, send: func(ctx context.Context, t store.Target, m Message) error {
 		clientID := val(t, "client_id")
 		if clientID == "" {
-			clientID = "continuum-notifications"
+			clientID = "silo-notifications"
 		}
 		return mqttPublish(ctx, val(t, "address"), clientID, val(t, "topic"), m.Title+"\n"+m.Body)
 	}}
